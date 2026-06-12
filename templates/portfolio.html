@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BRRR Scout — portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,700;125,800&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#18242E;--mortar:#E9ECEE;--card:#fff;--brick:#A8402C;--pass:#1F7A4D;--thin:#C77F1F;--walk:#8A1F1F;
+--line:#C8CED3;--mono:'IBM Plex Mono',monospace;--disp:'Archivo',sans-serif;--body:'Inter',system-ui,sans-serif}
+*{box-sizing:border-box} body{margin:0;background:var(--mortar);color:var(--ink);font-family:var(--body);font-size:15px}
+header{background:var(--ink);color:#fff;padding:18px 28px;display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
+header h1{font-family:var(--disp);font-stretch:125%;font-weight:800;font-size:22px;letter-spacing:.04em;margin:0;text-transform:uppercase}
+header h1 span{color:#E07B5F} header .sub{font-family:var(--mono);font-size:12px;opacity:.7}
+header nav{margin-left:auto;display:flex;gap:10px}
+.btn{font-family:var(--mono);font-size:13px;text-decoration:none;color:var(--ink);background:#fff;border:1px solid var(--ink);padding:7px 14px;cursor:pointer}
+.btn:hover{background:#E07B5F;color:#fff;border-color:#E07B5F} .btn.small{font-size:11px;padding:4px 9px}
+.flash{background:#FFF6D9;border-bottom:1px solid #E0CE8A;padding:10px 28px;font-family:var(--mono);font-size:12.5px}
+main{max-width:1180px;margin:26px auto;padding:0 20px}
+.strip{display:flex;gap:26px;flex-wrap:wrap;border-top:2px solid var(--ink);border-bottom:1px solid var(--line);padding:14px 4px;margin-bottom:22px}
+.strip div b{display:block;font-family:var(--mono);font-size:24px;font-weight:600}
+.strip div span{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:#5A6772}
+.prop{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--ink);margin-bottom:16px;padding:16px 18px}
+.prop.window{border-left-color:var(--brick);box-shadow:0 0 0 1px var(--brick)}
+.prop.refinanced{border-left-color:var(--pass)}
+.prop-head{display:flex;gap:16px;flex-wrap:wrap;align-items:baseline}
+.prop-head h3{margin:0;font-size:16px} .prop-head small{font-family:var(--mono);font-size:11.5px;color:#5A6772}
+.status{font-family:var(--mono);font-size:11px;text-transform:uppercase;border:1px solid var(--line);padding:2px 8px}
+.refi-banner{font-family:var(--disp);font-stretch:125%;font-weight:800;color:#fff;background:var(--brick);padding:8px 12px;margin:10px 0;letter-spacing:.04em}
+.countdown{font-family:var(--mono);font-weight:600}
+.countdown.near{color:var(--thin)}
+.nums{display:flex;gap:28px;flex-wrap:wrap;margin:12px 0;font-family:var(--mono)}
+.nums div b{display:block;font-size:18px;font-weight:600} .nums div span{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:#5A6772}
+.nums .pull b{color:var(--brick);font-size:24px}
+.over{color:var(--walk)}
+.conf{display:inline-block;font-size:10px;padding:1px 6px;border:1px solid;font-family:var(--mono)}
+.conf-high{color:var(--pass);border-color:var(--pass)} .conf-medium{color:var(--thin);border-color:var(--thin)} .conf-low{color:var(--walk);border-color:var(--walk)}
+.actions{display:flex;gap:16px;flex-wrap:wrap;border-top:1px dashed var(--line);padding-top:12px;font-size:13px}
+.actions form{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.actions input,.actions select{padding:6px;border:1px solid var(--line);font-size:13px;width:110px}
+details.addform{margin:0 0 24px;background:var(--card);border:1px solid var(--line)}
+details.addform summary{padding:12px 18px;font-family:var(--mono);font-size:13px;cursor:pointer}
+details.addform form{padding:0 18px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+details.addform input{padding:8px;border:1px solid var(--line);font-size:14px;width:100%}
+.empty{background:var(--card);border:1px dashed var(--line);padding:46px;text-align:center;color:#5A6772}
+footer{max-width:1180px;margin:30px auto;padding:0 20px 40px;font-size:12px;color:#5A6772;line-height:1.6}
+input:focus-visible,button:focus-visible,select:focus-visible{outline:3px solid #E07B5F;outline-offset:1px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Port<span>/</span>Folio</h1>
+  <div class="sub">6-month refinance countdowns · cash recycled · the repeat in BRRR</div>
+  <nav>
+    <a class="btn" href="{{ url_for('index') }}">Deal ledger</a>
+    <a class="btn" href="{{ url_for('auctions') }}">Auction tracker</a>
+  </nav>
+</header>
+{% with msgs = get_flashed_messages() %}{% for m in msgs %}<div class="flash">{{ m }}</div>{% endfor %}{% endwith %}
+<main>
+  <div class="strip">
+    <div><b>{{ t.n }}</b><span>Properties</span></div>
+    <div><b>£{{ '{:,}'.format(t.deployed) }}</b><span>Cash deployed (all-in)</span></div>
+    <div><b>£{{ '{:,}'.format(t.recycled) }}</b><span>Cash recycled out</span></div>
+    <div><b>£{{ '{:,}'.format(t.cash_in_market) }}</b><span>Net cash in market</span></div>
+    <div><b>£{{ '{:,}'.format(t.cashflow) }}/pcm</b><span>Portfolio cashflow</span></div>
+    <div><b>{{ '%.0f%%'|format(t.agg_ltv*100) }}</b><span>Aggregate LTV</span></div>
+  </div>
+
+  <details class="addform" {% if not props %}open{% endif %}>
+    <summary>+ Add owned property (completion date starts the 6-month refinance clock)</summary>
+    <form method="post" action="{{ url_for('portfolio_add') }}">
+      <input name="address" placeholder="Address" required>
+      <input name="postcode" placeholder="Postcode" required>
+      <input name="prop_type" placeholder="Type e.g. Terraced">
+      <input name="purchase_price" type="number" placeholder="Purchase price £" required>
+      <input name="completion_date" type="date" required title="Completion date">
+      <input name="refurb_budget" type="number" placeholder="Refurb budget £">
+      <input name="refurb_spent" type="number" placeholder="Refurb spent so far £">
+      <input name="rent_actual" type="number" placeholder="Rent £/pcm (0 if empty)">
+      <input name="mortgage_loan" type="number" placeholder="Current loan £ (0 if cash)">
+      <input name="mortgage_rate" type="number" step="0.01" placeholder="Rate % (blank = default)">
+      <input name="est_value" type="number" placeholder="Estimated value £">
+      <input name="notes" placeholder="Notes">
+      <button class="btn" type="submit">Add property</button>
+    </form>
+  </details>
+
+  {% if not props %}<div class="empty"><strong>No properties yet.</strong> Add your first completion above — the refinance countdown starts immediately.</div>{% endif %}
+
+  {% for p in props %}
+  <article class="prop {{ 'window' if p.window_open }} {{ 'refinanced' if p.status=='refinanced' }}">
+    <div class="prop-head">
+      <h3>{{ p.address }}</h3>
+      <small>{{ p.postcode }} · {{ p.prop_type or '—' }} · completed {{ p.completion_date }}</small>
+      <span class="status">{{ p.status }}</span>
+      {% if p.refi_days_left is not none and p.status != 'refinanced' %}
+        {% if p.refi_days_left > 0 %}
+          <span class="countdown {{ 'near' if p.refi_days_left<=30 }}">refi eligible in {{ p.refi_days_left }} days ({{ p.refi_eligible_date }})</span>
+        {% endif %}
+      {% endif %}
+      <form method="post" action="{{ url_for('portfolio_delete', pid=p.id) }}" style="margin-left:auto">
+        <button class="btn small" onclick="return confirm('Remove from portfolio?')">remove</button></form>
+    </div>
+
+    {% if p.window_open %}
+    <div class="refi-banner">REFI WINDOW OPEN — refinancing now releases ~£{{ '{:,}'.format(p.refi_pull) }} at {{ '%.0f'|format(75) }}% LTV</div>
+    {% endif %}
+
+    <div class="nums">
+      <div><b>£{{ '{:,}'.format(p.all_in) }}</b><span>All-in cost</span></div>
+      <div><b>£{{ '{:,}'.format(p.est_value or 0) }}</b><span>Est. value
+        {% if p.est_value_confidence %}<span class="conf conf-{{ p.est_value_confidence|lower }}">{{ p.est_value_confidence }}</span>{% endif %}</span></div>
+      <div class="pull"><b>£{{ '{:,}'.format(p.refi_pull) }}</b><span>Refi @75% releases</span></div>
+      <div><b>£{{ '{:,}'.format(p.equity) }}</b><span>Equity</span></div>
+      <div><b class="{{ 'over' if p.refurb_over }}">£{{ '{:,}'.format(p.refurb_spent or 0) }} / £{{ '{:,}'.format(p.refurb_budget or 0) }}</b><span>Refurb spent / budget{% if p.refurb_over %} — OVER{% endif %}</span></div>
+      <div><b>£{{ p.rent_actual or 0 }}/pcm</b><span>Rent · cashflow £{{ p.cashflow_pm }}/pcm</span></div>
+      {% if p.refinanced_amount %}<div><b>£{{ '{:,}'.format(p.refinanced_amount) }}</b><span>Recycled {{ p.refinance_date }}</span></div>{% endif %}
+    </div>
+
+    <div class="actions">
+      <form method="post" action="{{ url_for('portfolio_update', pid=p.id) }}">
+        <input name="refurb_spent" type="number" placeholder="Refurb spent £">
+        <input name="rent_actual" type="number" placeholder="Rent £/pcm">
+        <input name="est_value" type="number" placeholder="Est. value £">
+        <select name="status"><option value="">status…</option>
+          <option value="refurbing">refurbing</option><option value="let">let</option></select>
+        <button class="btn small" type="submit">Update</button>
+      </form>
+      <form method="post" action="{{ url_for('portfolio_revalue', pid=p.id) }}">
+        <button class="btn small" type="submit">Revalue from Land Registry</button>
+      </form>
+      {% if p.status != 'refinanced' %}
+      <form method="post" action="{{ url_for('portfolio_refinance', pid=p.id) }}">
+        <input name="amount" type="number" placeholder="Refi amount £" required>
+        <input name="rate" type="number" step="0.01" placeholder="New rate %">
+        <input name="date" type="date">
+        <button class="btn small" type="submit">Record refinance</button>
+      </form>
+      {% endif %}
+    </div>
+    {% if p.notes %}<p style="font-size:13px;color:#5A6772;margin:8px 0 0">{{ p.notes }}</p>{% endif %}
+  </article>
+  {% endfor %}
+</main>
+<footer>
+  The 6-month clock runs from your Land Registry completion date (183 days, the common lender seasoning rule —
+  a few lenders go earlier with a bridging exit, many surveyors still value conservatively inside 12 months).
+  “Revalue from Land Registry” gives the unimproved comp baseline; your post-refurb valuation should beat it.
+  Refi-release figures assume the rates in <code>analyzer.py</code> and exclude product/legal fees on the new mortgage.
+</footer>
+</body>
+</html>

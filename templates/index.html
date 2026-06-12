@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BRRR Scout — deal ledger</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,700;125,800&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#18242E; --mortar:#E9ECEE; --card:#FFFFFF; --brick:#A8402C;
+  --pass:#1F7A4D; --thin:#C77F1F; --walk:#8A1F1F; --line:#C8CED3;
+  --mono:'IBM Plex Mono',monospace; --disp:'Archivo',sans-serif; --body:'Inter',system-ui,sans-serif;
+}
+*{box-sizing:border-box} body{margin:0;background:var(--mortar);color:var(--ink);font-family:var(--body);font-size:15px}
+header{background:var(--ink);color:#fff;padding:18px 28px;display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
+header h1{font-family:var(--disp);font-stretch:125%;font-weight:800;font-size:22px;letter-spacing:.04em;margin:0;text-transform:uppercase}
+header h1 span{color:#E07B5F}
+header .sub{font-family:var(--mono);font-size:12px;opacity:.7}
+header nav{margin-left:auto;display:flex;gap:10px}
+.btn{font-family:var(--mono);font-size:13px;text-decoration:none;color:var(--ink);background:#fff;border:1px solid var(--ink);padding:7px 14px;cursor:pointer}
+.btn:hover{background:#E07B5F;color:#fff;border-color:#E07B5F}
+.btn:focus-visible{outline:3px solid #E07B5F;outline-offset:2px}
+.flash{background:#FFF6D9;border-bottom:1px solid #E0CE8A;padding:10px 28px;font-family:var(--mono);font-size:12.5px}
+main{max-width:1180px;margin:26px auto;padding:0 20px}
+.strip{display:flex;gap:26px;flex-wrap:wrap;border-top:2px solid var(--ink);border-bottom:1px solid var(--line);padding:14px 4px;margin-bottom:22px}
+.strip div b{display:block;font-family:var(--mono);font-size:24px;font-weight:600}
+.strip div span{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:#5A6772}
+.deal{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--ink);margin-bottom:14px;padding:16px 18px;display:grid;grid-template-columns:minmax(220px,1.3fr) repeat(4,minmax(90px,1fr)) 150px;gap:14px;align-items:center}
+.deal.pass{border-left-color:var(--pass)} .deal.thin{border-left-color:var(--thin)} .deal.walk{border-left-color:var(--walk)}
+.addr{font-weight:600;line-height:1.3} .addr small{display:block;font-family:var(--mono);font-weight:400;font-size:11.5px;color:#5A6772;margin-top:3px}
+.addr a{color:inherit;text-decoration:none;border-bottom:1px dotted var(--brick)}
+.num{font-family:var(--mono)} .num b{font-size:17px;font-weight:600;display:block}
+.num span{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:#5A6772}
+.drop{display:inline-block;font-size:10.5px;background:var(--pass);color:#fff;padding:1px 6px;margin-left:6px;border-radius:2px}
+.gauge{grid-column:1/-1}
+.gauge .bar{display:flex;height:14px;border:1px solid var(--ink);overflow:hidden}
+.gauge .out{background:repeating-linear-gradient(45deg,var(--brick),var(--brick) 6px,#BC5A45 6px,#BC5A45 12px)}
+.gauge .left{background:repeating-linear-gradient(-45deg,#fff,#fff 4px,#C8CED3 4px,#C8CED3 6px)}
+.gauge .lbl{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;color:#5A6772;margin-top:3px}
+.stamp{justify-self:end;font-family:var(--disp);font-stretch:125%;font-weight:800;font-size:14px;letter-spacing:.06em;border:2.5px solid;padding:5px 10px;transform:rotate(-3deg);text-align:center}
+.stamp.pass{color:var(--pass);border-color:var(--pass)} .stamp.thin{color:var(--thin);border-color:var(--thin)} .stamp.walk{color:var(--walk);border-color:var(--walk)}
+.tags{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+.tag{font-family:var(--mono);font-size:11px;border:1px solid var(--line);padding:2px 8px;background:#F6F7F8}
+.tag.conv-yes{border-color:var(--pass);color:var(--pass)} .tag.conv-no{border-color:var(--walk);color:var(--walk)} .tag.conv-maybe{border-color:var(--thin);color:var(--thin)}
+.empty{background:var(--card);border:1px dashed var(--line);padding:46px;text-align:center;color:#5A6772}
+.empty code{font-family:var(--mono);background:#F0F1F2;padding:1px 5px}
+details.addform{margin:26px 0;background:var(--card);border:1px solid var(--line)}
+details.addform summary{padding:12px 18px;font-family:var(--mono);font-size:13px;cursor:pointer}
+details.addform form{padding:0 18px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+details.addform input,details.addform select{padding:8px;border:1px solid var(--line);font-family:var(--body);font-size:14px;width:100%}
+footer{max-width:1180px;margin:30px auto;padding:0 20px 40px;font-size:12px;color:#5A6772;line-height:1.6}
+@media(max-width:760px){.deal{grid-template-columns:1fr 1fr}.stamp{justify-self:start}}
+@media(prefers-reduced-motion:no-preference){.deal{transition:transform .12s}.deal:hover{transform:translateX(3px)}}
+.maxbid{background:var(--ink);color:#fff;padding:18px;margin-bottom:22px}
+.maxbid h2{font-family:var(--disp);font-stretch:125%;font-size:15px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 12px}
+.maxbid h2 small{font-family:var(--mono);font-weight:400;text-transform:none;letter-spacing:0;opacity:.65;font-size:11.5px}
+.maxbid form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.maxbid input{padding:9px;border:1px solid #3A4854;background:#22313D;color:#fff;font-family:var(--mono);font-size:13px}
+.maxbid input::placeholder{color:#8A99A6}
+.maxbid-out{display:flex;gap:34px;flex-wrap:wrap;margin-top:16px;border-top:1px solid #3A4854;padding-top:14px}
+.bignum{font-family:var(--mono);font-size:34px;font-weight:600;color:#E07B5F}
+.bignum.alt{font-size:22px;color:#fff;align-self:end}
+.bignum span{display:block;font-size:10.5px;font-weight:400;color:#8A99A6;text-transform:uppercase;letter-spacing:.07em;max-width:230px}
+.warn{font-family:var(--mono);font-size:12px;color:#F0C36D;width:100%}
+.conf{display:inline-block;font-family:var(--mono);font-size:10px;padding:1px 6px;margin-top:3px;border:1px solid}
+.conf-high{color:var(--pass);border-color:var(--pass)} .conf-medium{color:var(--thin);border-color:var(--thin)}
+.conf-low,.conf-none{color:var(--walk);border-color:var(--walk)}
+</style>
+</head>
+<body>
+<header>
+  <h1>BRRR<span>/</span>Scout</h1>
+  <div class="sub">buy · refurb · refinance · rent · repeat — deal ledger, updated {{ deals|length and (deals[0].analysed_at|ts) or '—' }}</div>
+  <nav>
+    <a class="btn" href="{{ url_for('auctions') }}">Auction tracker</a>
+    <a class="btn" href="{{ url_for('portfolio') }}">Portfolio</a>
+    <a class="btn" href="{{ url_for('scan_live') }}">Run live scan</a>
+    <a class="btn" href="{{ url_for('scan_inbox') }}">Import inbox</a>
+  </nav>
+</header>
+{% with msgs = get_flashed_messages() %}{% for m in msgs %}<div class="flash">{{ m }}</div>{% endfor %}{% endwith %}
+<main>
+  <section class="maxbid">
+    <h2>Max bid calculator <small>— work backwards from end value, lock the number before the room opens</small></h2>
+    <form method="get" action="{{ url_for('maxbid') }}">
+      <input name="end_value" type="number" placeholder="End value £ (from comps)" required value="{{ maxbid.end_value if maxbid }}">
+      <input name="refurb" type="number" placeholder="Refurb £ (default 20,000)" value="{{ maxbid.refurb if maxbid }}">
+      <input name="rent" type="number" placeholder="Monthly rent £" required value="{{ maxbid.rent if maxbid }}">
+      <input name="target_roi" type="number" step="0.5" placeholder="Target ROI % (default 12)" value="{{ (maxbid.target_roi*100)|round(1) if maxbid }}">
+      <button class="btn" type="submit">Calculate</button>
+    </form>
+    {% if maxbid %}
+    <div class="maxbid-out">
+      {% if maxbid.max_bid is not none %}
+      <div class="bignum">{{ maxbid.max_bid|gbp }}<span>MAX BID for {{ (maxbid.target_roi*100)|round(0)|int }}% ROI — do not raise the paddle past this</span></div>
+      <div class="bignum alt">{{ maxbid.bid_full_recycle|gbp }}<span>bid for FULL RECYCLE (pull ~all cash out)</span></div>
+      <div class="bignum alt">{{ maxbid.cashflow_yr|gbp }}/yr<span>cashflow at refi loan {{ maxbid.loan|gbp }} · stress {{ 'PASS' if maxbid.stress_pass else 'FAIL' }}</span></div>
+      {% endif %}
+      {% if maxbid.note %}<p class="warn">⚠ {{ maxbid.note }}</p>{% endif %}
+    </div>
+    {% endif %}
+  </section>
+
+  <div class="strip">
+    <div><b>{{ deals|length }}</b><span>Tracked deals</span></div>
+    <div><b>{{ deals|selectattr('verdict','in',['FULL RECYCLE','GOOD DEAL','ON TARGET'])|list|length }}</b><span>Good deals</span></div>
+    {% set rois = deals|selectattr('roi')|map(attribute='roi')|list %}
+    <div><b>{{ rois and '%.1f%%'|format((rois|sum/rois|length)*100) or '—' }}</b><span>Avg ROI on cash left</span></div>
+    <div><b>£{{ '{:,}'.format(cfg.MAX_PRICE) }}</b><span>Price ceiling</span></div>
+  </div>
+
+  {% if not deals %}
+  <div class="empty">
+    <p><strong>No deals yet.</strong> Run a live scan, or save listing pages from Rightmove/Zoopla
+    (Ctrl+S in your browser) into <code>data/inbox/</code> and click “Import inbox”.</p>
+  </div>
+  {% endif %}
+
+  {% for d in deals %}
+  {% set cls = 'pass' if d.verdict in ['FULL RECYCLE','GOOD DEAL','ON TARGET'] else ('thin' if d.verdict=='THIN' else 'walk') %}
+  <article class="deal {{ cls }}">
+    <div class="addr">
+      {% if d.url and d.url.startswith('http') %}<a href="{{ d.url }}" target="_blank" rel="noopener">{{ d.address or d.url }}</a>
+      {% else %}{{ d.address or 'Manual entry' }}{% endif %}
+      <small>{{ d.postcode or d.outcode }} · {{ d.prop_type or '—' }} · {{ d.bedrooms or '?' }} bed
+      · {{ d.source }}{% if d.is_auction %} · AUCTION{% endif %} · first seen {{ d.first_seen|ts }}</small>
+    </div>
+    <div class="num"><b>{{ d.price|gbp }}</b><span>Asking</span>
+      {% if d.price_drop and d.price_drop>0 %}<span class="drop">▼ {{ d.price_drop|gbp }} since first seen</span>{% endif %}</div>
+    <div class="num"><b>{{ d.comp_median|gbp }}</b><span>Comp value ({{ d.comp_count or 0 }} · {{ d.comp_basis or 'outcode' }})</span>
+      {% if d.comp_confidence %}<span class="conf conf-{{ d.comp_confidence|lower }}">{{ d.comp_confidence }} confidence</span>{% endif %}</div>
+    <div class="num"><b>{{ d.end_value|gbp }}</b><span>End value used</span></div>
+    <div class="num"><b>{{ d.roi is not none and '%.1f%%'|format(d.roi*100) or '—' }}</b><span>ROI on cash left</span></div>
+    <div class="stamp {{ cls }}">{{ d.verdict or 'UNRATED' }}</div>
+
+    {% if d.total_cash_in %}
+    <div class="gauge">
+      {% set pct = (d.pulled_out / d.total_cash_in * 100)|round(1) %}
+      <div class="bar"><div class="out" style="width:{{ pct }}%"></div><div class="left" style="width:{{ 100-pct }}%"></div></div>
+      <div class="lbl"><span>pulled back out {{ d.pulled_out|gbp }} ({{ pct }}%)</span>
+        <span>left in {{ d.left_in|gbp }} · cash in {{ d.total_cash_in|gbp }} · rent {{ d.monthly_rent|gbp }}/pcm · cashflow {{ d.net_cashflow_yr|gbp }}/yr · stress {{ 'PASS' if d.stress_pass else 'FAIL' }}</span></div>
+    </div>
+    {% endif %}
+
+    <div class="tags">
+      {% if d.conversion %}
+        {% set cv = d.conversion.convertible %}
+        <span class="tag conv-{{ 'yes' if cv==true else ('no' if cv==false else 'maybe') }}">
+          1→2 BED: {{ 'YES' if cv==true else ('NO' if cv==false else cv|upper) }}</span>
+        {% if d.conversion.summary %}<span class="tag">{{ d.conversion.summary }}</span>{% endif %}
+      {% elif d.bedrooms==1 and not d.floorplan_url %}
+        <span class="tag">1→2 bed: no floorplan published</span>
+      {% endif %}
+      {% if d.tenure %}<span class="tag">{{ d.tenure }}</span>{% endif %}
+      {% if d.n_prices and d.n_prices>1 %}<span class="tag">{{ d.n_prices }} price points tracked</span>{% endif %}
+    </div>
+  </article>
+  {% endfor %}
+
+  <details class="addform">
+    <summary>+ Add a listing manually (auction catalogue, sourced deal…)</summary>
+    <form method="post" action="{{ url_for('add_manual') }}">
+      <input name="address" placeholder="Address" required>
+      <input name="postcode" placeholder="Postcode e.g. TS1 3BA" required>
+      <input name="price" type="number" placeholder="Asking / guide £" required>
+      <input name="bedrooms" type="number" placeholder="Beds">
+      <input name="prop_type" placeholder="Type e.g. Terraced">
+      <input name="url" placeholder="Listing URL (optional)">
+      <input name="floorplan_url" placeholder="Floorplan image URL (optional)">
+      <label style="font-size:13px;display:flex;align-items:center;gap:6px"><input type="checkbox" name="is_auction" style="width:auto"> Auction lot</label>
+      <button class="btn" type="submit">Analyse deal</button>
+    </form>
+  </details>
+</main>
+<footer>
+  End values default to the HM Land Registry sold-price median for the outcode (capped at asking +45%) — always
+  refine with same-street comparables before bidding. Rent estimates are heuristic; replace with real rental comps.
+  Assumptions (5.25% rate, 75% LTV, 5% SDLT, fees, voids) live in <code>analyzer.py</code>. Live scanning of portals
+  may be blocked by their bot protection and is for personal research only — the browser-save inbox is the reliable path.
+</footer>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BRRR Scout — auction tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,700;125,800&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#18242E;--mortar:#E9ECEE;--card:#fff;--brick:#A8402C;--pass:#1F7A4D;--thin:#C77F1F;--walk:#8A1F1F;
+--line:#C8CED3;--mono:'IBM Plex Mono',monospace;--disp:'Archivo',sans-serif;--body:'Inter',system-ui,sans-serif}
+*{box-sizing:border-box} body{margin:0;background:var(--mortar);color:var(--ink);font-family:var(--body);font-size:15px}
+header{background:var(--ink);color:#fff;padding:18px 28px;display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
+header h1{font-family:var(--disp);font-stretch:125%;font-weight:800;font-size:22px;letter-spacing:.04em;margin:0;text-transform:uppercase}
+header h1 span{color:#E07B5F} header .sub{font-family:var(--mono);font-size:12px;opacity:.7}
+header nav{margin-left:auto}
+.btn{font-family:var(--mono);font-size:13px;text-decoration:none;color:var(--ink);background:#fff;border:1px solid var(--ink);padding:7px 14px;cursor:pointer}
+.btn:hover{background:#E07B5F;color:#fff;border-color:#E07B5F}
+.btn.small{font-size:11px;padding:4px 9px}
+.flash{background:#FFF6D9;border-bottom:1px solid #E0CE8A;padding:10px 28px;font-family:var(--mono);font-size:12.5px}
+main{max-width:1180px;margin:26px auto;padding:0 20px}
+.lot{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--ink);margin-bottom:16px;padding:16px 18px}
+.lot.ready{border-left-color:var(--pass)}
+.lot-head{display:flex;gap:20px;flex-wrap:wrap;align-items:baseline}
+.lot-head h3{margin:0;font-size:16px} .lot-head small{font-family:var(--mono);font-size:11.5px;color:#5A6772}
+.count{font-family:var(--mono);font-weight:600;font-size:15px}
+.count.soon{color:var(--walk)} .count.near{color:var(--thin)}
+.bids{display:flex;gap:30px;flex-wrap:wrap;margin:12px 0;font-family:var(--mono)}
+.bids div b{display:block;font-size:24px;font-weight:600}
+.bids .maxb b{color:var(--brick);font-size:30px}
+.bids div span{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:#5A6772}
+.over{color:var(--walk);font-weight:600}
+.checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:4px 18px;margin:10px 0;font-size:13.5px}
+.checks label{display:flex;gap:8px;align-items:center}
+.packbox{border-top:1px dashed var(--line);margin-top:10px;padding-top:10px;font-size:13px}
+.risk{font-family:var(--disp);font-stretch:125%;font-weight:800;padding:3px 9px;border:2px solid}
+.risk-low{color:var(--pass);border-color:var(--pass)} .risk-medium{color:var(--thin);border-color:var(--thin)}
+.risk-high,.risk-unknown{color:var(--walk);border-color:var(--walk)}
+.flags{margin:8px 0 0;padding-left:18px} .flags li{margin:2px 0}
+.lot form.inline{display:inline}
+details.addform{margin:0 0 24px;background:var(--card);border:1px solid var(--line)}
+details.addform summary{padding:12px 18px;font-family:var(--mono);font-size:13px;cursor:pointer}
+details.addform form{padding:0 18px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+details.addform input{padding:8px;border:1px solid var(--line);font-size:14px;width:100%}
+.empty{background:var(--card);border:1px dashed var(--line);padding:46px;text-align:center;color:#5A6772}
+footer{max-width:1180px;margin:30px auto;padding:0 20px 40px;font-size:12px;color:#5A6772;line-height:1.6}
+input:focus-visible,button:focus-visible{outline:3px solid #E07B5F;outline-offset:1px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Auction<span>/</span>Tracker</h1>
+  <div class="sub">guide vs locked max bid · legal pack red flags · bid-day checklist</div>
+  <nav><a class="btn" href="{{ url_for('index') }}">← Deal ledger</a> <a class="btn" href="{{ url_for('portfolio') }}">Portfolio</a></nav>
+</header>
+{% with msgs = get_flashed_messages() %}{% for m in msgs %}<div class="flash">{{ m }}</div>{% endfor %}{% endwith %}
+<main>
+  <details class="addform" {% if not lots %}open{% endif %}>
+    <summary>+ Add auction lot (max bid is calculated and locked on save)</summary>
+    <form method="post" action="{{ url_for('auctions_add') }}">
+      <input name="address" placeholder="Address" required>
+      <input name="postcode" placeholder="Postcode">
+      <input name="lot_no" placeholder="Lot #">
+      <input name="auction_house" placeholder="Auction house e.g. SDL, Pugh">
+      <input name="auction_date" type="date" required>
+      <input name="url" placeholder="Catalogue URL">
+      <input name="guide_price" type="number" placeholder="Guide price £" required>
+      <input name="end_value" type="number" placeholder="End value £ (from comps)" required>
+      <input name="refurb" type="number" placeholder="Refurb £ (default 20,000)">
+      <input name="rent" type="number" placeholder="Monthly rent £" required>
+      <input name="target_roi" type="number" step="0.5" placeholder="Target ROI % (default 12)">
+      <input name="notes" placeholder="Notes">
+      <button class="btn" type="submit">Lock max bid</button>
+    </form>
+  </details>
+
+  {% if not lots %}<div class="empty"><strong>No lots tracked.</strong> Add one above — guide prices are bait; your locked max bid is the only number that matters on the day.</div>{% endif %}
+
+  {% for l in lots %}
+  <article class="lot {{ 'ready' if l.bid_ready }}">
+    <div class="lot-head">
+      <h3>{{ l.address }}</h3>
+      <small>{{ l.postcode or '' }} · Lot {{ l.lot_no or '—' }} · {{ l.auction_house or '—' }}
+        {% if l.url %}· <a href="{{ l.url }}" target="_blank" rel="noopener">catalogue</a>{% endif %}</small>
+      {% if l.days_left is not none %}
+        <span class="count {{ 'soon' if l.days_left<=3 else ('near' if l.days_left<=10) }}">
+          {% if l.days_left < 0 %}auction passed{% elif l.days_left == 0 %}AUCTION TODAY{% else %}{{ l.days_left }} days to auction ({{ l.auction_date }}){% endif %}</span>
+      {% endif %}
+      <form class="inline" method="post" action="{{ url_for('auctions_delete', lot_id=l.id) }}" style="margin-left:auto">
+        <button class="btn small" onclick="return confirm('Remove this lot?')">remove</button></form>
+    </div>
+
+    <div class="bids">
+      <div><b>£{{ '{:,}'.format(l.guide_price) }}</b><span>Guide price</span></div>
+      <div class="maxb"><b>£{{ '{:,}'.format(l.max_bid) }}</b><span>LOCKED MAX BID ({{ (l.target_roi*100)|round(0)|int }}% ROI)</span>
+        {% if l.guide_price > l.max_bid %}<span class="over">guide already exceeds your max — expect to walk</span>{% endif %}</div>
+      <div><b>£{{ '{:,}'.format(l.max_bid_recycle) }}</b><span>Full-recycle bid</span></div>
+      <div><b>£{{ '{:,}'.format(l.end_value) }}</b><span>End value · refurb £{{ '{:,}'.format(l.refurb) }} · rent £{{ l.rent }}/pcm</span></div>
+    </div>
+
+    <form method="post" action="{{ url_for('auctions_check', lot_id=l.id) }}">
+      <div class="checks">
+        {% for key, label in items %}
+        <label><input type="checkbox" name="{{ key }}" {% if l.checklist.get(key) %}checked{% endif %}> {{ label }}</label>
+        {% endfor %}
+      </div>
+      <button class="btn small" type="submit">Save checklist ({{ l.checklist_done }}/{{ items|length }}{% if l.bid_ready %} — BID READY{% endif %})</button>
+    </form>
+
+    <div class="packbox">
+      {% if l.pack %}
+        <span class="risk risk-{{ (l.pack.risk or 'unknown')|lower }}">PACK RISK: {{ l.pack.risk }}</span>
+        <span style="font-family:var(--mono);font-size:12px;margin-left:8px">
+          {{ l.pack.tenure or '?' }}{% if l.pack.lease_years_remaining %} · {{ l.pack.lease_years_remaining }}y lease{% endif %}
+          {% if l.pack.buyer_pays_seller_fees == true %} · ⚠ buyer pays seller fees{% endif %}
+          {% if l.pack.completion_days %} · completes in {{ l.pack.completion_days }} days{% endif %}</span>
+        <p style="margin:6px 0 0">{{ l.pack.summary }}</p>
+        {% if l.pack.red_flags %}<ul class="flags">{% for f in l.pack.red_flags %}<li>{{ f }}</li>{% endfor %}</ul>{% endif %}
+      {% else %}
+        <form method="post" action="{{ url_for('auctions_pack', lot_id=l.id) }}" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <span>Legal pack:</span><input type="file" name="pack" accept="application/pdf" required>
+          <button class="btn small" type="submit">Analyse PDF for red flags</button>
+        </form>
+      {% endif %}
+    </div>
+    {% if l.notes %}<p style="font-size:13px;color:#5A6772;margin:8px 0 0">{{ l.notes }}</p>{% endif %}
+  </article>
+  {% endfor %}
+</main>
+<footer>
+  Pack analysis is an AI screening aid for prioritising lots — it is not legal advice and does not replace your
+  solicitor reading the pack before you bid. Max bids assume the rates and fees in <code>analyzer.py</code>.
+</footer>
+</body>
+</html>
