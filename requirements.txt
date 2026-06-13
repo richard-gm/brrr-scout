@@ -1,3 +1,13 @@
+# Core web framework
 flask>=3.0
+
+# HTTP + HTML parsing (requests fallback layer)
 requests>=2.31
 beautifulsoup4>=4.12
+
+# Primary scraper: headless Chromium, JS-rendered, stealth mode
+# After install run: crawl4ai-setup  (downloads Playwright browsers)
+crawl4ai>=0.4.0
+
+# Werkzeug is a Flask dep but pin for Docker reproducibility
+werkzeug>=3.0
