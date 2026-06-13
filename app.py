@@ -95,9 +95,6 @@ def add_manual():
     flash("Listing added and analysed.")
     return redirect(url_for("index"))
 
-if __name__ == "__main__":
-    app.run(debug=False, port=5000)
-
 # ---- Feature 2: max-bid calculator (GET so inputs persist in URL) ----
 @app.route("/maxbid")
 def maxbid():
@@ -297,3 +294,6 @@ def portfolio_refinance(pid):
 def portfolio_delete(pid):
     c = db.conn(); db.portfolio_delete(c, pid); c.close()
     return redirect(url_for("portfolio"))
+
+if __name__ == "__main__":
+    app.run(debug=False, host="0.0.0.0", port=5000)
