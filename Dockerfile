@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 
-# System deps for Playwright/Chromium (used by crawl4ai)
+# System deps required by Playwright's headless Chromium
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget curl gnupg ca-certificates \
     libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
@@ -10,24 +10,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Install Python deps first (layer-cached unless requirements change)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Download Playwright browsers needed by crawl4ai
+# Download Playwright's Chromium at build time so first scan is instant
 RUN crawl4ai-setup || python -m playwright install chromium --with-deps
 
-# Copy application code
 COPY . .
 
-# Ensure data directories exist
-RUN mkdir -p data/inbox data/packs
+RUN mkdir -p data/inbox data/packs data/cookies
 
 EXPOSE 5000
 
-# Optional env vars (set at runtime):
-#   ANTHROPIC_API_KEY   — enables floorplan + legal pack AI analysis
-#   SCRAPER_PROXY_URL   — e.g. http://scraperapi:<key>@proxy-server.scraperapi.com:8001
-#                         Routes crawl4ai + requests through a residential proxy;
-#                         greatly improves live scraping success rate.
+# Environment variables (all optional):
+#
+#   ANTHROPIC_API_KEY   — enables AI floorplan + legal pack analysis
+#
+#   SCRAPER_PROXY_URL   — residential proxy for harder-to-reach pages
+#                         e.g. http://scraperapi:<key>@proxy-server.scraperapi.com:8001
+#                         Not needed if cookies are present.
+#
+# Cookie files (recommended — bypasses bot detection for free):
+#   Mount your data/ folder with -v $(pwd)/data:/app/data
+#   See data/cookies/COOKIES.md for the 2-minute setup.
+
 CMD ["python", "app.py"]

@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.DS_Store
+data/brrr_scout.db
+data/packs/
+data/cookies/*.json
