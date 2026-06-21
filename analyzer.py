@@ -146,6 +146,17 @@ def estimate_rent(price, outcode=""):
     Always override with real Rightmove/Zoopla rental comps before bidding."""
     return int(round(price * 0.0115 / 25) * 25)
 
+def median_rent_from_comps(comps, beds=None):
+    """Median rent from scraped Rightmove rental listings, filtered by bedroom count when possible."""
+    if not comps:
+        return None
+    if beds:
+        pool = [c["rent_pm"] for c in comps if c.get("beds") == beds and c.get("rent_pm")]
+        if len(pool) >= 3:
+            return int(statistics.median(pool))
+    pool = [c["rent_pm"] for c in comps if c.get("rent_pm")]
+    return int(statistics.median(pool)) if pool else None
+
 def analyse_deal(price, end_value, refurb, monthly_rent):
     sdlt = calc_sdlt(price)
     total_in = price + refurb + sdlt + A["fees"]
@@ -245,6 +256,47 @@ def analyse_deal_ai(deal_numbers, address, postcode):
         return json.loads(text.replace("```json", "").replace("```", "").strip())
     except (requests.RequestException, ValueError):
         return None
+
+
+# ---- Feature E: owner intelligence (Land Registry address history) ----
+def fetch_address_history(address, postcode=None):
+    """Look up sales history for a specific address via Land Registry Price Paid.
+    Returns ownership duration, last purchase price, and full sale history."""
+    import datetime as _dt, re as _re
+    if not address:
+        return None
+    part = address.split(",")[0].strip()
+    m = _re.match(r'^(flat\s+\d+[a-z]?\s+\d+[a-z]?|\d+[a-z]?)\s+(.+)$', part, _re.I)
+    if not m:
+        return None
+    params = {"propertyAddress.paon": m.group(1).strip(),
+              "propertyAddress.street": m.group(2).strip(), "_pageSize": 10}
+    if postcode:
+        params["propertyAddress.postcode"] = postcode
+    try:
+        r = requests.get(LR_URL, params=params, timeout=25)
+        r.raise_for_status()
+        items = r.json().get("result", {}).get("items", [])
+    except (requests.RequestException, ValueError):
+        return None
+    if not items:
+        return None
+    items.sort(key=lambda x: x.get("transactionDate", ""), reverse=True)
+    latest = items[0]
+    last_date = (latest.get("transactionDate") or "")[:10]
+    last_price = latest.get("pricePaid")
+    try:
+        years = round((_dt.date.today() - _dt.date.fromisoformat(last_date)).days / 365.25, 1)
+    except (ValueError, TypeError):
+        years = None
+    return {
+        "last_sale_date": last_date,
+        "last_sale_price": last_price,
+        "ownership_years": years,
+        "sale_count": len(items),
+        "history": [{"date": (i.get("transactionDate") or "")[:10],
+                     "price": i.get("pricePaid")} for i in items[:5]],
+    }
 
 
 # ---- floorplan conversion check (Claude vision) ----

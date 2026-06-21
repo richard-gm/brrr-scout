@@ -74,6 +74,9 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 40px;font-size:12px;colo
 .ai-box ul{margin:4px 0;padding-left:18px;line-height:1.5}
 .ai-box li{margin-bottom:2px}
 .ai-flag{display:inline-block;background:#FFF0F0;border:1px solid var(--walk);color:var(--walk);font-family:var(--mono);font-size:10px;padding:1px 6px;margin:2px 4px 0 0}
+.owner-box{grid-column:1/-1;background:#F5F0FF;border:1px solid #C8B8F0;padding:7px 12px;font-size:12px;font-family:var(--mono)}
+.owner-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6A5A88;margin-right:8px;font-weight:600}
+.owner-flag{display:inline-block;background:#EEE8FF;border:1px solid #9878C8;color:#5A3A8A;font-size:10px;padding:1px 6px;margin:0 4px}
 </style>
 </head>
 <body>
@@ -150,7 +153,23 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 40px;font-size:12px;colo
       {% set pct = (d.pulled_out / d.total_cash_in * 100)|round(1) %}
       <div class="bar"><div class="out" style="width:{{ pct }}%"></div><div class="left" style="width:{{ 100-pct }}%"></div></div>
       <div class="lbl"><span>pulled back out {{ d.pulled_out|gbp }} ({{ pct }}%)</span>
-        <span>left in {{ d.left_in|gbp }} · cash in {{ d.total_cash_in|gbp }} · rent {{ d.monthly_rent|gbp }}/pcm · cashflow {{ d.net_cashflow_yr|gbp }}/yr · stress {{ 'PASS' if d.stress_pass else 'FAIL' }}</span></div>
+        <span>left in {{ d.left_in|gbp }} · cash in {{ d.total_cash_in|gbp }} · rent {{ d.monthly_rent|gbp }}/pcm{% if d.rental_comp_count %} <span style="font-size:9px;opacity:.7">({{ d.rental_comp_count }} live comps)</span>{% endif %} · cashflow {{ d.net_cashflow_yr|gbp }}/yr · stress {{ 'PASS' if d.stress_pass else 'FAIL' }}</span></div>
+    </div>
+    {% endif %}
+
+    {% if d.owner %}
+    <div class="owner-box">
+      <span class="owner-lbl">Owner intel</span>
+      last sold <strong>{{ d.owner.last_sale_date or '?' }}</strong>
+      for <strong>{% if d.owner.last_sale_price %}£{{ '{:,}'.format(d.owner.last_sale_price) }}{% else %}—{% endif %}</strong>
+      · held <strong>{{ d.owner.ownership_years or '?' }} yrs</strong>
+      · {{ d.owner.sale_count or 0 }} recorded sale{{ 's' if (d.owner.sale_count or 0) != 1 }}
+      {% if d.owner.ownership_years is not none and d.owner.ownership_years < 2 %}<span class="owner-flag">RECENT BUYER</span>{% endif %}
+      {% if d.owner.ownership_years is not none and d.owner.ownership_years > 20 %}<span class="owner-flag">LONG HOLD</span>{% endif %}
+      {% if d.owner.sale_count and d.owner.sale_count >= 4 %}<span class="owner-flag">HIGH TURNOVER</span>{% endif %}
+      {% if d.owner.last_sale_price and d.price %}
+        · asking {{ ((d.price - d.owner.last_sale_price) / d.owner.last_sale_price * 100)|round(0)|int }}% vs purchase price
+      {% endif %}
     </div>
     {% endif %}
 
@@ -184,26 +203,66 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 40px;font-size:12px;colo
   </article>
   {% endfor %}
 
-  <details class="addform">
-    <summary>+ Add a listing manually (auction catalogue, sourced deal…)</summary>
-    <form method="post" action="{{ url_for('add_manual') }}">
-      <input name="address" placeholder="Address" required>
-      <input name="postcode" placeholder="Postcode e.g. TS1 3BA" required>
-      <input name="price" type="number" placeholder="Asking / guide £" required>
-      <input name="bedrooms" type="number" placeholder="Beds">
-      <input name="prop_type" placeholder="Type e.g. Terraced">
-      <input name="url" placeholder="Listing URL (optional)">
-      <input name="floorplan_url" placeholder="Floorplan image URL (optional)">
-      <label style="font-size:13px;display:flex;align-items:center;gap:6px"><input type="checkbox" name="is_auction" style="width:auto"> Auction lot</label>
+  <details class="addform" id="addform">
+    <summary>+ Add a listing (paste Rightmove/Zoopla URL, or fill manually)</summary>
+    <div style="padding:0 18px 14px">
+      <div style="background:#EEF3FF;border:1px solid #B0C0E8;padding:12px 14px;margin-bottom:14px">
+        <label style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px">Paste a Rightmove or Zoopla listing URL to auto-fill ↓</label>
+        <div style="display:flex;gap:8px">
+          <input id="scrape-url" placeholder="https://www.rightmove.co.uk/properties/..." style="flex:1;padding:8px;border:1px solid var(--line);font-family:var(--body);font-size:14px" oninput="clearScrapeStatus()">
+          <button type="button" class="btn" onclick="scrapeUrl()">Auto-fill →</button>
+        </div>
+        <div id="scrape-status" style="font-family:var(--mono);font-size:11px;min-height:16px;margin-top:5px;color:#5A6772"></div>
+      </div>
+    </div>
+    <form id="manual-form" method="post" action="{{ url_for('add_manual') }}">
+      <input name="address" id="f-address" placeholder="Address" required>
+      <input name="postcode" id="f-postcode" placeholder="Postcode e.g. TS1 3BA" required>
+      <input name="price" id="f-price" type="number" placeholder="Asking / guide £" required>
+      <input name="bedrooms" id="f-bedrooms" type="number" placeholder="Beds">
+      <input name="prop_type" id="f-prop_type" placeholder="Type e.g. Terraced">
+      <input name="url" id="f-url" placeholder="Listing URL (optional)">
+      <input name="floorplan_url" id="f-floorplan_url" placeholder="Floorplan image URL (optional)">
+      <label style="font-size:13px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="f-is_auction" name="is_auction" style="width:auto"> Auction lot</label>
       <button class="btn" type="submit">Analyse deal</button>
     </form>
   </details>
+  <script>
+  function clearScrapeStatus(){document.getElementById('scrape-status').textContent='';}
+  async function scrapeUrl(){
+    const inp=document.getElementById('scrape-url');
+    const st=document.getElementById('scrape-status');
+    const url=inp.value.trim();
+    if(!url){st.textContent='Paste a URL first';return;}
+    st.textContent='Fetching listing… (~10 s)';
+    try{
+      const res=await fetch('/api/scrape?url='+encodeURIComponent(url));
+      const d=await res.json();
+      if(d.error){st.textContent='⚠ '+d.error;return;}
+      const set=(id,v)=>{if(v!=null&&v!==''){document.getElementById(id).value=v;}};
+      set('f-address',d.address);
+      set('f-postcode',d.postcode);
+      set('f-price',d.price);
+      set('f-bedrooms',d.bedrooms);
+      set('f-prop_type',d.prop_type);
+      set('f-url',d.url||url);
+      set('f-floorplan_url',d.floorplan_url);
+      if(d.is_auction)document.getElementById('f-is_auction').checked=true;
+      st.textContent='✓ Form filled — review then click Analyse deal';
+      st.style.color='#1F7A4D';
+    }catch(e){
+      st.textContent='⚠ Request failed — fill the form manually';
+      st.style.color='#8A1F1F';
+    }
+  }
+  </script>
 </main>
 <footer>
   End values default to the HM Land Registry sold-price median for the outcode (capped at asking +45%) — always
-  refine with same-street comparables before bidding. Rent estimates are heuristic; replace with real rental comps.
-  Assumptions (5.25% rate, 75% LTV, 5% SDLT, fees, voids) live in <code>analyzer.py</code>. Live scanning of portals
-  may be blocked by their bot protection and is for personal research only — the browser-save inbox is the reliable path.
+  refine with same-street comparables before bidding. Rent uses live Rightmove rental listings when available; falls back
+  to a 1.15%-of-value heuristic if scraping is blocked. Owner intel from Land Registry Price Paid (public, no name data).
+  Assumptions (5.25% rate, 75% LTV, tiered SDLT, fees, voids) live in <code>analyzer.py</code>. Live portal scanning
+  is for personal research only — the browser-save inbox is the most reliable import path.
 </footer>
 </body>
 </html>

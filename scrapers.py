@@ -417,6 +417,54 @@ def scrape_live(searches: list[dict]) -> tuple[list, list]:
 
 
 # ---------------------------------------------------------------------------
+# Feature B: Rightmove rental comps
+# ---------------------------------------------------------------------------
+def rightmove_rental_url(outcode):
+    return (f"https://www.rightmove.co.uk/property-to-rent/find.html?"
+            f"searchLocation={outcode}&useLocationIdentifier=false"
+            f"&radius=0.5&minBedrooms=1&maxBedrooms=3"
+            f"&displayPropertyType=flat%2Cterraced&sortType=1")
+
+
+def parse_rightmove_rentals(html):
+    """Extract individual rental listings from a Rightmove rental search page."""
+    out = []
+    m = re.search(r"window\.jsonModel\s*=\s*(\{.*?\})\s*</script>", html, re.S)
+    if not m:
+        return out
+    try:
+        model = json.loads(m.group(1))
+        for p in model.get("properties", []):
+            pi = p.get("price", {})
+            amount = pi.get("amount") or 0
+            if not amount:
+                continue
+            freq = (pi.get("frequency") or "").lower()
+            rent_pm = int(amount * 52 / 12) if "week" in freq else int(amount)
+            if not (100 <= rent_pm <= 6000):
+                continue
+            addr = p.get("displayAddress", "")
+            _, oc = _postcode(addr)
+            out.append({
+                "address": addr,
+                "outcode": oc or _outcode_only(addr),
+                "beds": p.get("bedrooms"),
+                "prop_type": p.get("propertySubType"),
+                "rent_pm": rent_pm,
+                "url": f"https://www.rightmove.co.uk/properties/{p.get('id')}",
+            })
+    except (json.JSONDecodeError, KeyError, TypeError):
+        pass
+    return out
+
+
+def fetch_rental_comps(outcode):
+    """Scrape live rental listings from Rightmove for an outcode area."""
+    html, _ = _fetch_with_fallback(rightmove_rental_url(outcode), "rightmove")
+    return parse_rightmove_rentals(html) if html else []
+
+
+# ---------------------------------------------------------------------------
 # Public: inbox
 # ---------------------------------------------------------------------------
 def import_inbox(folder: str = "data/inbox") -> tuple[list, list]:

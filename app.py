@@ -4,7 +4,7 @@ Run:  python app.py   then open http://127.0.0.1:5000
 Optional: export ANTHROPIC_API_KEY=sk-ant-...   (enables floorplan conversion checks)
 """
 import json, datetime
-from flask import Flask, render_template, redirect, url_for, request, flash
+from flask import Flask, render_template, redirect, url_for, request, flash, jsonify
 import db, config, scrapers, analyzer
 
 app = Flask(__name__)
@@ -22,6 +22,7 @@ def run_pipeline(listings):
     """Store listings, fetch comps + EPC per property, analyse each deal."""
     c = db.conn()
     outcode_cache = {}
+    rental_cache = {}
     n = 0
     for p in listings:
         if not p.get("price") or not p.get("outcode"):
@@ -33,19 +34,36 @@ def run_pipeline(listings):
                 p.update(epc_rating=epc.get("epc_rating"), floor_area=epc.get("floor_area"))
         pid = db.upsert_property(c, p)
         oc = p["outcode"]
+        # Sold comps
         if oc not in outcode_cache:
             comps = analyzer.fetch_sold_comps(oc)
             db.save_comps(c, oc, comps)
             outcode_cache[oc] = comps
         count, median, conf, basis = analyzer.score_comps(outcode_cache[oc], p.get("address"), p.get("prop_type"))
-        # End value: tiered comp value, but never assume more than +45% on asking
         end_value = min(median, int(p["price"] * 1.45)) if median else int(p["price"] * 1.30)
         refurb = config.REFURB_HEAVY if (p.get("is_auction") and p["price"] < 45000) else config.REFURB_DEFAULT
-        rent = analyzer.estimate_rent(end_value, oc)
+        # Feature B: real rental comps (cached per outcode, fall back to heuristic)
+        if oc not in rental_cache:
+            cached = db.get_rental_comps(c, oc)
+            if cached is None:
+                fresh = scrapers.fetch_rental_comps(oc)
+                if fresh:
+                    db.save_rental_comps(c, oc, fresh)
+                    cached = fresh
+                else:
+                    cached = []
+            rental_cache[oc] = cached
+        rent_live = analyzer.median_rent_from_comps(rental_cache[oc], beds=p.get("bedrooms"))
+        rent = rent_live or analyzer.estimate_rent(end_value, oc)
+        rental_count = len(rental_cache[oc]) if rental_cache[oc] else 0
         a = analyzer.analyse_deal(p["price"], end_value, refurb, rent)
-        a.update(comp_count=count, comp_median=median, comp_confidence=conf, comp_basis=basis)
+        a.update(comp_count=count, comp_median=median, comp_confidence=conf, comp_basis=basis,
+                 rental_comp_count=rental_count,
+                 rental_comp_median=rent_live)
         if p.get("floorplan_url") and (p.get("bedrooms") or 0) == 1:
             a["conversion"] = analyzer.check_conversion(p["floorplan_url"])
+        # Feature E: owner intelligence
+        a["owner"] = analyzer.fetch_address_history(p.get("address"), p.get("postcode"))
         # AI narrative verdict (only if ANTHROPIC_API_KEY set; non-blocking)
         a["ai"] = analyzer.analyse_deal_ai(a, p.get("address"), p.get("postcode"))
         db.save_analysis(c, pid, a)
@@ -64,6 +82,8 @@ def index():
         d = dict(r)
         d["conversion"] = json.loads(r["conversion_json"]) if r["conversion_json"] else None
         d["ai"] = json.loads(r["ai_json"]) if r.get("ai_json") and r["ai_json"] not in ("{}", "null") else None
+        raw_owner = r["owner_json"] if r.get("owner_json") else None
+        d["owner"] = json.loads(raw_owner) if raw_owner and raw_owner not in ("{}", "null") else None
         d["history"] = hist.get(r["pid"], [])
         parsed.append(d)
     return render_template("index.html", deals=parsed, cfg=config)
@@ -84,6 +104,28 @@ def lookup():
     return render_template("lookup.html", postcode=pc, epc=epc, comps=comps,
                            comp_median=median, comp_confidence=conf, comp_basis=basis,
                            outcode=outcode)
+
+# ---- Feature A: listing URL scraper (auto-fill the manual add form) ----
+@app.route("/api/scrape")
+def api_scrape():
+    url = request.args.get("url", "").strip()
+    if not url:
+        return jsonify({"error": "url required"}), 400
+    if "rightmove" in url:
+        portal = "rightmove"
+    elif "zoopla" in url:
+        portal = "zoopla"
+    else:
+        return jsonify({"error": "Only Rightmove and Zoopla URLs are supported"}), 400
+    html, _ = scrapers._fetch_with_fallback(url, portal)
+    if not html:
+        return jsonify({"error": "Could not fetch listing — save the page and use inbox import instead"}), 502
+    parser = scrapers.parse_rightmove if portal == "rightmove" else scrapers.parse_zoopla
+    listings = parser(html, url)
+    if not listings:
+        return jsonify({"error": "Page fetched but no listing data found — portal may be blocking scraping"}), 404
+    return jsonify(listings[0])
+
 
 @app.route("/scan/live")
 def scan_live():

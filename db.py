@@ -84,12 +84,14 @@ def save_comps(c, outcode, comps):
     c.commit()
 
 def save_analysis(c, pid, a):
-    a = dict(a); a["conversion_json"] = json.dumps(a.get("conversion") or {})
+    a = dict(a)
+    a["conversion_json"] = json.dumps(a.get("conversion") or {})
     a["ai_json"] = json.dumps(a.get("ai") or {})
+    a["owner_json"] = json.dumps(a.get("owner") or {})
     c.execute("""INSERT INTO analyses(property_id,refurb_estimate,end_value,monthly_rent,comp_count,comp_median,
                  total_cash_in,refi_loan,pulled_out,left_in,net_cashflow_yr,roi,gross_yield,stress_pass,verdict,
-                 conversion_json,analysed_at,comp_confidence,comp_basis,ai_verdict,ai_json)
-                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                 conversion_json,analysed_at,comp_confidence,comp_basis,ai_verdict,ai_json,owner_json,rental_comp_count,rental_comp_median)
+                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                  ON CONFLICT(property_id) DO UPDATE SET
                  refurb_estimate=excluded.refurb_estimate, end_value=excluded.end_value,
                  monthly_rent=excluded.monthly_rent, comp_count=excluded.comp_count, comp_median=excluded.comp_median,
@@ -98,13 +100,17 @@ def save_analysis(c, pid, a):
                  gross_yield=excluded.gross_yield, stress_pass=excluded.stress_pass, verdict=excluded.verdict,
                  conversion_json=excluded.conversion_json, analysed_at=excluded.analysed_at,
                  comp_confidence=excluded.comp_confidence, comp_basis=excluded.comp_basis,
-                 ai_verdict=excluded.ai_verdict, ai_json=excluded.ai_json""",
+                 ai_verdict=excluded.ai_verdict, ai_json=excluded.ai_json,
+                 owner_json=excluded.owner_json,
+                 rental_comp_count=excluded.rental_comp_count,
+                 rental_comp_median=excluded.rental_comp_median""",
               (pid, a.get("refurb_estimate"), a.get("end_value"), a.get("monthly_rent"), a.get("comp_count"),
                a.get("comp_median"), a.get("total_cash_in"), a.get("refi_loan"), a.get("pulled_out"),
                a.get("left_in"), a.get("net_cashflow_yr"), a.get("roi"), a.get("gross_yield"),
                int(bool(a.get("stress_pass"))), a.get("verdict"), a["conversion_json"], time.time(),
                a.get("comp_confidence"), a.get("comp_basis"),
-               (a.get("ai") or {}).get("verdict"), a["ai_json"]))
+               (a.get("ai") or {}).get("verdict"), a["ai_json"],
+               a["owner_json"], a.get("rental_comp_count"), a.get("rental_comp_median")))
     c.commit()
 
 def deals(c):
@@ -254,3 +260,49 @@ def portfolio_update(c, pid, **kw):
 def portfolio_delete(c, pid):
     c.execute("DELETE FROM portfolio WHERE id=?", (pid,))
     c.commit()
+
+
+# ---- v5: rental comps + owner intelligence columns ----
+MIGRATION_V5 = """
+CREATE TABLE IF NOT EXISTS rental_comps (
+  id INTEGER PRIMARY KEY,
+  outcode TEXT, address TEXT, beds INTEGER, prop_type TEXT,
+  rent_pm INTEGER, url TEXT, fetched_at REAL
+);
+"""
+_V5_COLS = [
+    ("analyses", "owner_json TEXT"),
+    ("analyses", "rental_comp_count INTEGER"),
+    ("analyses", "rental_comp_median INTEGER"),
+]
+
+def _migrate_v5(c):
+    c.executescript(MIGRATION_V5)
+    for table, col in _V5_COLS:
+        try:
+            c.execute(f"ALTER TABLE {table} ADD COLUMN {col}")
+        except sqlite3.OperationalError:
+            pass
+    c.commit()
+
+_conn_v4b = conn
+def conn():
+    c = _conn_v4b()
+    _migrate_v5(c)
+    return c
+
+def save_rental_comps(c, outcode, comps):
+    c.execute("DELETE FROM rental_comps WHERE outcode=?", (outcode,))
+    now = time.time()
+    for x in comps:
+        c.execute("INSERT INTO rental_comps(outcode,address,beds,prop_type,rent_pm,url,fetched_at) VALUES(?,?,?,?,?,?,?)",
+                  (outcode, x.get("address"), x.get("beds"), x.get("prop_type"), x["rent_pm"], x.get("url"), now))
+    c.commit()
+
+def get_rental_comps(c, outcode, max_age=86400):
+    """Return cached rental comps if fresher than max_age seconds, else None."""
+    row = c.execute("SELECT MAX(fetched_at) AS t FROM rental_comps WHERE outcode=?", (outcode,)).fetchone()
+    if not row or not row["t"] or (time.time() - row["t"]) > max_age:
+        return None
+    return [dict(r) for r in c.execute(
+        "SELECT * FROM rental_comps WHERE outcode=? ORDER BY rent_pm", (outcode,)).fetchall()]
