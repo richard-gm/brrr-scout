@@ -1,13 +1,30 @@
-"""Sold comps (HM Land Registry, official + free), BRRR deal maths, and the
-1-bed -> 2-bed floorplan conversion check via the Claude API."""
+"""Sold comps (HM Land Registry, official + free), BRRR deal maths, EPC data,
+and AI analysis via the Claude API."""
 import os, json, statistics, base64, requests
 
 LR_URL = "https://landregistry.data.gov.uk/data/ppi/transaction-record.json"
+EPC_URL = "https://epc.opendatacommunities.org/api/v1/domestic/search"
 
 # ---- assumptions (mirror the spreadsheet) ----
-A = dict(rate=0.0525, ltv=0.75, sdlt=0.05, fees=2500,
+A = dict(rate=0.0525, ltv=0.75, fees=2500,
          mgmt=0.10, maint=0.08, voids=0.04, insurance=350,
          stress_rate=0.07, stress_cover=1.25)
+
+
+# ---- SDLT: tiered additional-dwelling rates (England, Ltd company / second property) ----
+def calc_sdlt(price):
+    """Tiered SDLT for additional dwelling purchase. England rates as of 2025:
+    £0-£125k: 3%, £125k-£250k: 5%, £250k-£925k: 8%, £925k-£1.5m: 13%, over: 15%."""
+    brackets = [(125_000, 0.03), (250_000, 0.05), (925_000, 0.08),
+                (1_500_000, 0.13), (float("inf"), 0.15)]
+    tax, lower = 0, 0
+    for upper, rate in brackets:
+        band = min(price - lower, upper - lower)
+        if band <= 0:
+            break
+        tax += band * rate
+        lower = upper
+    return int(tax)
 
 def fetch_sold_comps(postcode_or_outcode, max_pages=3):
     """HM Land Registry Price Paid Data. Filter to recent sales client-side."""
@@ -98,21 +115,24 @@ def score_comps(comps, address, prop_type=None, since="2024-01-01", price_cap=20
 # ---- Feature 2: max-bid reverse calculator ----
 def max_bid(end_value, refurb, monthly_rent, target_roi=0.12):
     """Work backwards: given end value, refurb and rent, what's the most you can pay?
-    Returns dict with bid for full recycle, bid for target ROI, and the binding numbers."""
+    Returns dict with bid for full recycle, bid for target ROI, and the binding numbers.
+    Uses an effective SDLT rate derived from the end value as a proxy for purchase price."""
     loan = end_value * A["ltv"]
     mortgage_pm = loan * A["rate"] / 12
     opex_pm = monthly_rent * (A["mgmt"] + A["maint"] + A["voids"]) + A["insurance"] / 12
     cashflow_yr = (monthly_rent - mortgage_pm - opex_pm) * 12
     stress = monthly_rent >= loan * A["stress_rate"] / 12 * A["stress_cover"]
+    # Approximate effective SDLT rate for end value (used as divisor since purchase price unknown)
+    eff_sdlt_rate = calc_sdlt(int(end_value)) / end_value if end_value else 0.03
     out = dict(loan=int(loan), cashflow_yr=int(cashflow_yr), stress_pass=stress,
                bid_full_recycle=None, bid_target_roi=None, max_bid=None,
                note="")
     if cashflow_yr <= 0:
         out["note"] = "Negative cashflow at this rent/value — no bid works. Walk away."
         return out
-    bid_recycle = (0.80 * end_value - refurb - A["fees"]) / (1 + A["sdlt"])
+    bid_recycle = (0.80 * end_value - refurb - A["fees"]) / (1 + eff_sdlt_rate)
     max_left_in = cashflow_yr / target_roi
-    bid_roi = (max_left_in + loan - refurb - A["fees"]) / (1 + A["sdlt"])
+    bid_roi = (max_left_in + loan - refurb - A["fees"]) / (1 + eff_sdlt_rate)
     out["bid_full_recycle"] = max(int(bid_recycle // 250 * 250), 0)
     out["bid_target_roi"] = max(int(bid_roi // 250 * 250), 0)
     out["max_bid"] = out["bid_target_roi"]
@@ -127,7 +147,7 @@ def estimate_rent(price, outcode=""):
     return int(round(price * 0.0115 / 25) * 25)
 
 def analyse_deal(price, end_value, refurb, monthly_rent):
-    sdlt = price * A["sdlt"]
+    sdlt = calc_sdlt(price)
     total_in = price + refurb + sdlt + A["fees"]
     loan = end_value * A["ltv"]
     pulled = min(loan, total_in)
@@ -155,6 +175,77 @@ def analyse_deal(price, end_value, refurb, monthly_rent):
                 gross_yield=round(monthly_rent * 12 / price, 4),
                 stress_pass=stress, verdict=verdict,
                 end_value=int(end_value), refurb_estimate=int(refurb), monthly_rent=int(monthly_rent))
+
+# ---- EPC data (Open Data Communities, free API key required) ----
+def fetch_epc(postcode):
+    """Fetch the most recent EPC record for a postcode.
+    Register free at https://epc.opendatacommunities.org to get credentials."""
+    email = os.environ.get("EPC_API_EMAIL")
+    key = os.environ.get("EPC_API_KEY")
+    if not email or not key:
+        return None
+    auth = base64.b64encode(f"{email}:{key}".encode()).decode()
+    try:
+        r = requests.get(EPC_URL,
+                         params={"postcode": postcode.replace(" ", "+"), "size": 1},
+                         headers={"Authorization": f"Basic {auth}", "Accept": "application/json"},
+                         timeout=15)
+        r.raise_for_status()
+        rows = r.json().get("rows", [])
+        if not rows:
+            return None
+        row = rows[0]
+        return {
+            "epc_rating": row.get("current-energy-rating"),
+            "floor_area": row.get("total-floor-area"),
+            "property_type": row.get("property-type"),
+            "construction_age": row.get("construction-age-band"),
+        }
+    except (requests.RequestException, ValueError):
+        return None
+
+
+# ---- Claude AI deal narrative (BUY / WATCH / PASS with reasoning) ----
+DEAL_ANALYSIS_PROMPT = """You are a UK BRRRR property investment analyst. The investor uses a Ltd company (SPV) to buy in North England.
+Analyse the deal data and respond ONLY with valid JSON, no markdown:
+{
+  "verdict": "BUY" | "WATCH" | "PASS",
+  "confidence": "HIGH" | "MEDIUM" | "LOW",
+  "one_liner": "15 words max — the single most important thing about this deal",
+  "pros": ["up to 4 concise bullet points, most impactful first"],
+  "cons": ["up to 4 concise bullet points"],
+  "flags": ["DEAL-BREAKER items only — empty list if none"],
+  "action": "specific next step the investor should take right now"
+}
+Verdict rules:
+- BUY: stress test passes, positive cashflow, capital fully or near recycled
+- WATCH: marginal — worth negotiating or tracking a price drop
+- PASS: negative cashflow, stress fail, or cash stuck with <7% ROI
+Always flag: stress test fail, negative cashflow, cash left in > £25,000."""
+
+
+def analyse_deal_ai(deal_numbers, address, postcode):
+    """Claude-generated narrative verdict. Returns dict or None if ANTHROPIC_API_KEY not set."""
+    key = os.environ.get("ANTHROPIC_API_KEY")
+    if not key:
+        return None
+    payload = {**deal_numbers, "address": address, "postcode": postcode}
+    try:
+        r = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={"x-api-key": key, "anthropic-version": "2023-06-01",
+                     "content-type": "application/json"},
+            json={"model": "claude-sonnet-4-20250514", "max_tokens": 600,
+                  "system": DEAL_ANALYSIS_PROMPT,
+                  "messages": [{"role": "user",
+                                "content": f"Deal data:\n{json.dumps(payload, indent=2)}"}]},
+            timeout=30)
+        r.raise_for_status()
+        text = "".join(b.get("text", "") for b in r.json().get("content", []) if b.get("type") == "text")
+        return json.loads(text.replace("```json", "").replace("```", "").strip())
+    except (requests.RequestException, ValueError):
+        return None
+
 
 # ---- floorplan conversion check (Claude vision) ----
 CONVERSION_PROMPT = """You are assessing a UK property floorplan for an investor strategy:

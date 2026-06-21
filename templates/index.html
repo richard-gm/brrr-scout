@@ -65,6 +65,15 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 40px;font-size:12px;colo
 .conf{display:inline-block;font-family:var(--mono);font-size:10px;padding:1px 6px;margin-top:3px;border:1px solid}
 .conf-high{color:var(--pass);border-color:var(--pass)} .conf-medium{color:var(--thin);border-color:var(--thin)}
 .conf-low,.conf-none{color:var(--walk);border-color:var(--walk)}
+.epc{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;padding:1px 6px;color:#fff;border-radius:2px}
+.epc-a,.epc-b{background:#1F7A4D}.epc-c{background:#5A9E2F}.epc-d{background:#C77F1F}.epc-e{background:#C7601F}.epc-f,.epc-g{background:#8A1F1F}
+.ai-box{background:#F0F6FF;border:1px solid #B8D0F0;padding:10px 12px;margin-top:8px;font-size:13px;grid-column:1/-1}
+.ai-box .ai-verdict{font-family:var(--mono);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+.ai-box .ai-verdict.buy{color:var(--pass)}.ai-box .ai-verdict.watch{color:var(--thin)}.ai-box .ai-verdict.pass{color:var(--walk)}
+.ai-box .ai-liner{margin:4px 0 8px;font-style:italic;color:#3A4A5A}
+.ai-box ul{margin:4px 0;padding-left:18px;line-height:1.5}
+.ai-box li{margin-bottom:2px}
+.ai-flag{display:inline-block;background:#FFF0F0;border:1px solid var(--walk);color:var(--walk);font-family:var(--mono);font-size:10px;padding:1px 6px;margin:2px 4px 0 0}
 </style>
 </head>
 <body>
@@ -72,6 +81,7 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 40px;font-size:12px;colo
   <h1>BRRR<span>/</span>Scout</h1>
   <div class="sub">buy · refurb · refinance · rent · repeat — deal ledger, updated {{ deals|length and (deals[0].analysed_at|ts) or '—' }}</div>
   <nav>
+    <a class="btn" href="{{ url_for('lookup') }}">Postcode lookup</a>
     <a class="btn" href="{{ url_for('auctions') }}">Auction tracker</a>
     <a class="btn" href="{{ url_for('portfolio') }}">Portfolio</a>
     <a class="btn" href="{{ url_for('scan_live') }}">Run live scan</a>
@@ -123,7 +133,9 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 40px;font-size:12px;colo
       {% if d.url and d.url.startswith('http') %}<a href="{{ d.url }}" target="_blank" rel="noopener">{{ d.address or d.url }}</a>
       {% else %}{{ d.address or 'Manual entry' }}{% endif %}
       <small>{{ d.postcode or d.outcode }} · {{ d.prop_type or '—' }} · {{ d.bedrooms or '?' }} bed
-      · {{ d.source }}{% if d.is_auction %} · AUCTION{% endif %} · first seen {{ d.first_seen|ts }}</small>
+      · {{ d.source }}{% if d.is_auction %} · AUCTION{% endif %} · first seen {{ d.first_seen|ts }}
+      {% if d.epc_rating %}<span class="epc epc-{{ d.epc_rating|lower }}">EPC {{ d.epc_rating }}</span>{% endif %}
+      {% if d.floor_area %}<span style="font-size:10.5px"> · {{ d.floor_area }}m²</span>{% endif %}</small>
     </div>
     <div class="num"><b>{{ d.price|gbp }}</b><span>Asking</span>
       {% if d.price_drop and d.price_drop>0 %}<span class="drop">▼ {{ d.price_drop|gbp }} since first seen</span>{% endif %}</div>
@@ -139,6 +151,21 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 40px;font-size:12px;colo
       <div class="bar"><div class="out" style="width:{{ pct }}%"></div><div class="left" style="width:{{ 100-pct }}%"></div></div>
       <div class="lbl"><span>pulled back out {{ d.pulled_out|gbp }} ({{ pct }}%)</span>
         <span>left in {{ d.left_in|gbp }} · cash in {{ d.total_cash_in|gbp }} · rent {{ d.monthly_rent|gbp }}/pcm · cashflow {{ d.net_cashflow_yr|gbp }}/yr · stress {{ 'PASS' if d.stress_pass else 'FAIL' }}</span></div>
+    </div>
+    {% endif %}
+
+    {% if d.ai %}
+    <div class="ai-box">
+      <span class="ai-verdict {{ d.ai.verdict|lower }}">Claude AI: {{ d.ai.verdict }}{% if d.ai.confidence %} ({{ d.ai.confidence }}){% endif %}</span>
+      {% if d.ai.one_liner %}<p class="ai-liner">{{ d.ai.one_liner }}</p>{% endif %}
+      {% if d.ai.flags %}<div>{% for f in d.ai.flags %}<span class="ai-flag">⚠ {{ f }}</span>{% endfor %}</div>{% endif %}
+      {% if d.ai.pros or d.ai.cons %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+        {% if d.ai.pros %}<div><strong style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">Pros</strong><ul>{% for p in d.ai.pros %}<li>{{ p }}</li>{% endfor %}</ul></div>{% endif %}
+        {% if d.ai.cons %}<div><strong style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">Cons</strong><ul>{% for c in d.ai.cons %}<li>{{ c }}</li>{% endfor %}</ul></div>{% endif %}
+      </div>
+      {% endif %}
+      {% if d.ai.action %}<p style="margin:6px 0 0;font-size:12px;color:#3A4A5A"><strong>Next:</strong> {{ d.ai.action }}</p>{% endif %}
     </div>
     {% endif %}
 

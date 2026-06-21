@@ -52,15 +52,20 @@ def upsert_property(c, p):
     row = c.execute("SELECT id FROM properties WHERE url=?", (p["url"],)).fetchone()
     if row:
         pid = row["id"]
-        c.execute("UPDATE properties SET last_seen=?, floorplan_url=COALESCE(?,floorplan_url) WHERE id=?",
-                  (now, p.get("floorplan_url"), pid))
+        c.execute("""UPDATE properties SET last_seen=?,
+                     floorplan_url=COALESCE(?,floorplan_url),
+                     epc_rating=COALESCE(?,epc_rating),
+                     floor_area=COALESCE(?,floor_area)
+                     WHERE id=?""",
+                  (now, p.get("floorplan_url"), p.get("epc_rating"), p.get("floor_area"), pid))
     else:
         c.execute("""INSERT INTO properties(source,source_id,url,address,postcode,outcode,prop_type,
-                     bedrooms,tenure,is_auction,floorplan_url,first_seen,last_seen)
-                     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                     bedrooms,tenure,is_auction,floorplan_url,epc_rating,floor_area,first_seen,last_seen)
+                     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                   (p["source"], p.get("source_id"), p["url"], p.get("address"), p.get("postcode"),
                    p.get("outcode"), p.get("prop_type"), p.get("bedrooms"), p.get("tenure"),
-                   int(p.get("is_auction", 0)), p.get("floorplan_url"), now, now))
+                   int(p.get("is_auction", 0)), p.get("floorplan_url"),
+                   p.get("epc_rating"), p.get("floor_area"), now, now))
         pid = c.execute("SELECT last_insert_rowid() i").fetchone()["i"]
     if p.get("price"):
         last = c.execute("SELECT price FROM price_snapshots WHERE property_id=? ORDER BY seen_at DESC LIMIT 1",
@@ -80,10 +85,11 @@ def save_comps(c, outcode, comps):
 
 def save_analysis(c, pid, a):
     a = dict(a); a["conversion_json"] = json.dumps(a.get("conversion") or {})
+    a["ai_json"] = json.dumps(a.get("ai") or {})
     c.execute("""INSERT INTO analyses(property_id,refurb_estimate,end_value,monthly_rent,comp_count,comp_median,
                  total_cash_in,refi_loan,pulled_out,left_in,net_cashflow_yr,roi,gross_yield,stress_pass,verdict,
-                 conversion_json,analysed_at,comp_confidence,comp_basis)
-                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                 conversion_json,analysed_at,comp_confidence,comp_basis,ai_verdict,ai_json)
+                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                  ON CONFLICT(property_id) DO UPDATE SET
                  refurb_estimate=excluded.refurb_estimate, end_value=excluded.end_value,
                  monthly_rent=excluded.monthly_rent, comp_count=excluded.comp_count, comp_median=excluded.comp_median,
@@ -91,12 +97,14 @@ def save_analysis(c, pid, a):
                  left_in=excluded.left_in, net_cashflow_yr=excluded.net_cashflow_yr, roi=excluded.roi,
                  gross_yield=excluded.gross_yield, stress_pass=excluded.stress_pass, verdict=excluded.verdict,
                  conversion_json=excluded.conversion_json, analysed_at=excluded.analysed_at,
-                 comp_confidence=excluded.comp_confidence, comp_basis=excluded.comp_basis""",
+                 comp_confidence=excluded.comp_confidence, comp_basis=excluded.comp_basis,
+                 ai_verdict=excluded.ai_verdict, ai_json=excluded.ai_json""",
               (pid, a.get("refurb_estimate"), a.get("end_value"), a.get("monthly_rent"), a.get("comp_count"),
                a.get("comp_median"), a.get("total_cash_in"), a.get("refi_loan"), a.get("pulled_out"),
                a.get("left_in"), a.get("net_cashflow_yr"), a.get("roi"), a.get("gross_yield"),
                int(bool(a.get("stress_pass"))), a.get("verdict"), a["conversion_json"], time.time(),
-               a.get("comp_confidence"), a.get("comp_basis")))
+               a.get("comp_confidence"), a.get("comp_basis"),
+               (a.get("ai") or {}).get("verdict"), a["ai_json"]))
     c.commit()
 
 def deals(c):
@@ -173,6 +181,30 @@ def update_lot(c, lot_id, **kw):
 def delete_lot(c, lot_id):
     c.execute("DELETE FROM auction_lots WHERE id=?", (lot_id,))
     c.commit()
+
+# ---- v4: EPC data + AI verdict columns ----
+MIGRATION_V4 = ""
+_V4_COLS = [
+    ("properties", "epc_rating TEXT"),
+    ("properties", "floor_area REAL"),
+    ("analyses", "ai_verdict TEXT"),
+    ("analyses", "ai_json TEXT"),
+]
+
+def _migrate_v4(c):
+    for table, col in _V4_COLS:
+        try:
+            c.execute(f"ALTER TABLE {table} ADD COLUMN {col}")
+        except sqlite3.OperationalError:
+            pass
+    c.commit()
+
+_conn_v3 = conn
+def conn():
+    c = _conn_v3()
+    _migrate_v4(c)
+    return c
+
 
 # ---- v3: portfolio (owned properties) ----
 MIGRATION_V3 = """

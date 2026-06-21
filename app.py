@@ -19,13 +19,18 @@ def ts(v):
     return datetime.datetime.fromtimestamp(v).strftime("%d %b %Y") if v else "—"
 
 def run_pipeline(listings):
-    """Store listings, fetch comps per outcode, analyse each deal."""
+    """Store listings, fetch comps + EPC per property, analyse each deal."""
     c = db.conn()
     outcode_cache = {}
     n = 0
     for p in listings:
         if not p.get("price") or not p.get("outcode"):
             continue
+        # Fetch EPC data if postcode available and not already on listing
+        if p.get("postcode") and not p.get("epc_rating"):
+            epc = analyzer.fetch_epc(p["postcode"])
+            if epc:
+                p.update(epc_rating=epc.get("epc_rating"), floor_area=epc.get("floor_area"))
         pid = db.upsert_property(c, p)
         oc = p["outcode"]
         if oc not in outcode_cache:
@@ -41,6 +46,8 @@ def run_pipeline(listings):
         a.update(comp_count=count, comp_median=median, comp_confidence=conf, comp_basis=basis)
         if p.get("floorplan_url") and (p.get("bedrooms") or 0) == 1:
             a["conversion"] = analyzer.check_conversion(p["floorplan_url"])
+        # AI narrative verdict (only if ANTHROPIC_API_KEY set; non-blocking)
+        a["ai"] = analyzer.analyse_deal_ai(a, p.get("address"), p.get("postcode"))
         db.save_analysis(c, pid, a)
         n += 1
     c.close()
@@ -56,9 +63,27 @@ def index():
     for r in rows:
         d = dict(r)
         d["conversion"] = json.loads(r["conversion_json"]) if r["conversion_json"] else None
+        d["ai"] = json.loads(r["ai_json"]) if r.get("ai_json") and r["ai_json"] not in ("{}", "null") else None
         d["history"] = hist.get(r["pid"], [])
         parsed.append(d)
     return render_template("index.html", deals=parsed, cfg=config)
+
+
+@app.route("/lookup")
+def lookup():
+    """Postcode lookup: fetch EPC + Land Registry comps, pre-fill add form."""
+    pc = request.args.get("postcode", "").strip().upper()
+    if not pc:
+        return render_template("lookup.html", result=None, postcode=None)
+    epc = analyzer.fetch_epc(pc)
+    oc = pc.split()[0] if " " in pc else pc[:pc.rindex(pc[-3]) if len(pc) > 3 else 3]
+    # Use the outcode for comps
+    outcode = pc.split()[0] if " " in pc else "".join(c for c in pc if not c.isdigit())[:3]
+    comps = analyzer.fetch_sold_comps(outcode)[:20]
+    _, median, conf, basis = analyzer.score_comps(comps, None, None)
+    return render_template("lookup.html", postcode=pc, epc=epc, comps=comps,
+                           comp_median=median, comp_confidence=conf, comp_basis=basis,
+                           outcode=outcode)
 
 @app.route("/scan/live")
 def scan_live():

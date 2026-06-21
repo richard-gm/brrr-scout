@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BRRR Scout — Postcode lookup</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,700;125,800&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#18242E;--mortar:#E9ECEE;--card:#FFFFFF;--brick:#A8402C;--pass:#1F7A4D;--thin:#C77F1F;--walk:#8A1F1F;--line:#C8CED3;--mono:'IBM Plex Mono',monospace;--disp:'Archivo',sans-serif;--body:'Inter',system-ui,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--mortar);color:var(--ink);font-family:var(--body);font-size:15px}
+header{background:var(--ink);color:#fff;padding:18px 28px;display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
+header h1{font-family:var(--disp);font-stretch:125%;font-weight:800;font-size:22px;letter-spacing:.04em;margin:0;text-transform:uppercase}
+header h1 span{color:#E07B5F}
+header nav{margin-left:auto;display:flex;gap:10px}
+.btn{font-family:var(--mono);font-size:13px;text-decoration:none;color:var(--ink);background:#fff;border:1px solid var(--ink);padding:7px 14px;cursor:pointer;display:inline-block}
+.btn:hover{background:#E07B5F;color:#fff;border-color:#E07B5F}
+.btn.primary{background:var(--ink);color:#fff}
+.btn.primary:hover{background:#E07B5F;border-color:#E07B5F}
+main{max-width:900px;margin:30px auto;padding:0 20px}
+h2{font-family:var(--disp);font-stretch:125%;font-weight:800;font-size:16px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 14px}
+.search-bar{background:var(--card);border:1px solid var(--line);padding:20px;margin-bottom:24px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.search-bar label{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px}
+.search-bar input{padding:10px 14px;border:1px solid var(--ink);font-family:var(--mono);font-size:15px;width:220px}
+.panel{background:var(--card);border:1px solid var(--line);padding:20px;margin-bottom:18px}
+.panel h3{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#5A6772;margin:0 0 12px;border-bottom:1px solid var(--line);padding-bottom:8px}
+.kv{display:grid;grid-template-columns:180px 1fr;gap:6px 16px;font-size:14px}
+.kv dt{color:#5A6772;font-size:13px}
+.kv dd{margin:0;font-family:var(--mono);font-weight:600}
+.epc-badge{display:inline-block;font-family:var(--mono);font-weight:600;font-size:18px;padding:4px 12px;border-radius:2px;color:#fff;margin-bottom:8px}
+.epc-a,.epc-b{background:#1F7A4D}.epc-c{background:#5A9E2F}.epc-d{background:#C77F1F}.epc-e{background:#C7601F}.epc-f,.epc-g{background:#8A1F1F}
+.comp-table{width:100%;border-collapse:collapse;font-size:13px}
+.comp-table th{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#5A6772;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+.comp-table td{padding:6px 8px;border-bottom:1px solid #F0F1F2;font-family:var(--mono)}
+.comp-table tr:last-child td{border-bottom:none}
+.add-form{background:var(--ink);color:#fff;padding:22px}
+.add-form h3{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.08em;opacity:.65;margin:0 0 16px}
+.add-form form{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.add-form label{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;opacity:.65;display:block;margin-bottom:3px}
+.add-form input,.add-form select{padding:9px;border:1px solid #3A4854;background:#22313D;color:#fff;font-family:var(--mono);font-size:13px;width:100%}
+.add-form input::placeholder{color:#8A99A6}
+.notice{font-family:var(--mono);font-size:12px;color:#5A6772;padding:10px;background:#F6F7F8;border:1px solid var(--line);margin-bottom:14px}
+.conf{display:inline-block;font-family:var(--mono);font-size:10px;padding:1px 6px;border:1px solid}
+.conf-high{color:var(--pass);border-color:var(--pass)}.conf-medium{color:var(--thin);border-color:var(--thin)}.conf-low,.conf-none{color:var(--walk);border-color:var(--walk)}
+</style>
+</head>
+<body>
+<header>
+  <h1>BRRR<span>/</span>Scout</h1>
+  <nav>
+    <a class="btn" href="{{ url_for('index') }}">← Deal ledger</a>
+    <a class="btn" href="{{ url_for('auctions') }}">Auction tracker</a>
+    <a class="btn" href="{{ url_for('portfolio') }}">Portfolio</a>
+  </nav>
+</header>
+<main>
+  <div class="search-bar">
+    <div>
+      <label for="pc">Postcode lookup</label>
+      <input id="pc" name="postcode" placeholder="e.g. TS1 3BA" value="{{ postcode or '' }}" form="lookup-form">
+    </div>
+    <form id="lookup-form" method="get" action="{{ url_for('lookup') }}">
+      <input type="hidden" name="postcode" id="pc-hidden">
+      <button class="btn primary" type="submit" onclick="document.getElementById('pc-hidden').value=document.getElementById('pc').value">Look up</button>
+    </form>
+    <small style="align-self:center;font-size:12px;color:#5A6772">Pulls EPC data + Land Registry sold comps for any UK postcode</small>
+  </div>
+
+{% if postcode %}
+
+  {% if epc %}
+  <div class="panel">
+    <h3>EPC — {{ postcode }}</h3>
+    <span class="epc-badge epc-{{ epc.epc_rating|lower if epc.epc_rating else 'x' }}">{{ epc.epc_rating or '?' }}</span>
+    <dl class="kv">
+      <dt>Floor area</dt><dd>{{ epc.floor_area }}m²</dd>
+      <dt>Property type</dt><dd>{{ epc.property_type or '—' }}</dd>
+      <dt>Construction</dt><dd>{{ epc.construction_age or '—' }}</dd>
+    </dl>
+  </div>
+  {% else %}
+  <div class="notice">No EPC data found for {{ postcode }}{% if not epc %} — check EPC_API_EMAIL / EPC_API_KEY in .env to enable lookups.{% endif %}</div>
+  {% endif %}
+
+  <div class="panel">
+    <h3>Sold comps — {{ outcode }} outcode
+      {% if comp_median %}<span style="float:right;font-size:11px">median <strong>£{{ '{:,}'.format(comp_median) }}</strong> · <span class="conf conf-{{ comp_confidence|lower }}">{{ comp_confidence }}</span> · {{ comp_basis }}</span>{% endif %}
+    </h3>
+    {% if comps %}
+    <p style="font-size:12px;color:#5A6772;margin:0 0 10px">Land Registry Price Paid data — typically 6–8 week publication lag.</p>
+    <table class="comp-table">
+      <thead><tr><th>Date</th><th>Address</th><th>Type</th><th style="text-align:right">Price</th></tr></thead>
+      <tbody>
+      {% for c in comps[:15] %}
+      <tr>
+        <td>{{ c.sold_date }}</td>
+        <td>{{ c.address or '—' }}</td>
+        <td>{{ c.prop_type or '—' }}</td>
+        <td style="text-align:right">£{{ '{:,}'.format(c.price) }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="font-size:13px;color:#5A6772">No recent sold prices found for outcode {{ outcode }}.</p>
+    {% endif %}
+  </div>
+
+  <div class="add-form">
+    <h3>Add this property to the deal ledger</h3>
+    <form method="post" action="{{ url_for('add_manual') }}">
+      <div>
+        <label>Address</label>
+        <input name="address" placeholder="Full address" required>
+      </div>
+      <div>
+        <label>Postcode</label>
+        <input name="postcode" value="{{ postcode }}" required>
+      </div>
+      <div>
+        <label>Asking / guide price £</label>
+        <input name="price" type="number" placeholder="e.g. 60000" required>
+      </div>
+      <div>
+        <label>Beds</label>
+        <input name="bedrooms" type="number" placeholder="e.g. 2">
+      </div>
+      <div>
+        <label>Type</label>
+        <input name="prop_type" placeholder="e.g. Terraced" value="{{ epc.property_type if epc else '' }}">
+      </div>
+      <div>
+        <label>Listing URL (optional)</label>
+        <input name="url" placeholder="Rightmove / Zoopla URL">
+      </div>
+      <div>
+        <label>Floorplan URL (optional)</label>
+        <input name="floorplan_url" placeholder="For 1-bed conversion check">
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding-top:22px">
+        <input type="checkbox" name="is_auction" id="is_auc" style="width:auto">
+        <label for="is_auc" style="font-size:13px;opacity:1;text-transform:none;letter-spacing:0">Auction lot</label>
+      </div>
+      <div style="padding-top:14px">
+        <button class="btn primary" type="submit">Analyse deal →</button>
+      </div>
+    </form>
+  </div>
+
+{% endif %}
+</main>
+</body>
+</html>
