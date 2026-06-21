@@ -1,7 +1,9 @@
 .git
 .gitignore
+.DS_Store
 __pycache__
 *.pyc
-.DS_Store
-README.md
-CLAUDE.md
+.env
+data/brrr_scout.db
+data/packs/
+data/inbox/

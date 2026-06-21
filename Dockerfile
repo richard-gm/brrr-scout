@@ -24,14 +24,12 @@ EXPOSE 5000
 
 # Environment variables (all optional):
 #
-#   ANTHROPIC_API_KEY   — enables AI floorplan + legal pack analysis
+#   ANTHROPIC_API_KEY       — enables AI deal verdict, floorplan + legal pack analysis
+#   EPC_API_EMAIL / KEY     — free EPC data (register at epc.opendatacommunities.org)
+#   SCRAPER_PROXY_URL       — residential proxy, e.g. ScraperAPI (optional)
 #
-#   SCRAPER_PROXY_URL   — residential proxy for harder-to-reach pages
-#                         e.g. http://scraperapi:<key>@proxy-server.scraperapi.com:8001
-#                         Not needed if cookies are present.
-#
-# Cookie files (recommended — bypasses bot detection for free):
-#   Mount your data/ folder with -v $(pwd)/data:/app/data
-#   See data/cookies/COOKIES.md for the 2-minute setup.
+# All env vars can be set in .env (copy from .env.example)
+# Cookie files: mount data/ with -v $(pwd)/data:/app/data
+# See docs/CLAUDE.md for the AI analysis contract.
 
-CMD ["python", "app.py"]
+CMD ["python", "wsgi.py"]

@@ -1,6 +1,12 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# Secrets — copy .env.example to .env and fill in your keys
+.env
+
+# Runtime data — persisted via Docker volume mount, not version-controlled
 data/brrr_scout.db
 data/packs/
 data/cookies/*.json
+data/inbox/

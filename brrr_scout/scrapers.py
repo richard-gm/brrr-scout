@@ -33,8 +33,10 @@ RATE_SECONDS  = 6
 CRAWL_TIMEOUT = 60_000   # ms — allow time for JS + any challenge pages
 PROXY_URL     = os.environ.get("SCRAPER_PROXY_URL")
 
+_PROJECT_ROOT = pathlib.Path(__file__).parent.parent
+
 # Cookie files — drop exports from Cookie-Editor here
-COOKIES_DIR   = pathlib.Path(os.environ.get("COOKIES_DIR", "data/cookies"))
+COOKIES_DIR = pathlib.Path(os.environ.get("COOKIES_DIR", str(_PROJECT_ROOT / "data" / "cookies")))
 
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
       "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -467,14 +469,14 @@ def fetch_rental_comps(outcode):
 # ---------------------------------------------------------------------------
 # Public: inbox
 # ---------------------------------------------------------------------------
-def import_inbox(folder: str = "data/inbox") -> tuple[list, list]:
+def import_inbox(folder=None) -> tuple[list, list]:
     """
     Parse every .html/.htm file saved from a browser.
     Rightmove/Zoopla: run search, scroll, Ctrl+S → 'Webpage, HTML Only'
     → save into data/inbox/ → click 'Import inbox' in the app.
     """
     listings, errors = [], []
-    inbox = pathlib.Path(folder)
+    inbox = pathlib.Path(folder) if folder else _PROJECT_ROOT / "data" / "inbox"
     for f in sorted(inbox.glob("*.htm*")):
         html = f.read_text(errors="ignore")
         if not html.strip():

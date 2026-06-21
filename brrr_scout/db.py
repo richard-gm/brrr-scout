@@ -1,7 +1,7 @@
 """SQLite storage for BRRR Scout."""
 import sqlite3, json, time, pathlib
 
-DB_PATH = pathlib.Path(__file__).parent / "data" / "brrr_scout.db"
+DB_PATH = pathlib.Path(__file__).parent.parent / "data" / "brrr_scout.db"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS properties (
