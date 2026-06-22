@@ -1,0 +1,178 @@
+20:11:31 [INFO] Loaded 5 cookies for rightmove from rightmove.json
+20:11:31 [INFO] ═ FETCH RIGHTMOVE (+5 cookies) ═ https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=OUTCODE^1720&maxPrice=70000&minPrice=20000&sortType=1&propertyTypes=flat%2Cterraced&includeSSTC=false&tenure=freehold%2Cleasehold%2CshareOfFreehold
+20:11:31 [INFO] crawl4ai: injecting 5 cookies
+20:11:40 [INFO] ✓ crawl4ai: 1048506 chars
+20:11:40 [INFO] rightmove HTML start (1048506 total): <!DOCTYPE html><html lang="en"><head><meta charset="utf-8" data-next-head=""><meta name="viewport" content="width=device-width" data-next-head=""><script async="" src="https://sb.scorecardresearch.com…
+20:11:40 [INFO] rightmove: no jsonModel, trying __NEXT_DATA__
+20:11:40 [INFO] rightmove: found 8 properties via __NEXT_DATA__.searchResults.properties
+20:11:40 [INFO] rightmove: 8 listings via crawl4ai (+5 cookies)
+20:11:46 [INFO] Loaded 5 cookies for rightmove from rightmove.json
+20:11:46 [INFO] ═ FETCH RIGHTMOVE (+5 cookies) ═ https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=OUTCODE^1732&maxPrice=70000&minPrice=20000&sortType=1&propertyTypes=flat%2Cterraced&includeSSTC=false&tenure=freehold%2Cleasehold%2CshareOfFreehold
+20:11:46 [INFO] crawl4ai: injecting 5 cookies
+20:11:53 [INFO] ✓ crawl4ai: 931652 chars
+20:11:53 [INFO] rightmove HTML start (931652 total): <!DOCTYPE html><html lang="en"><head><meta charset="utf-8" data-next-head=""><meta name="viewport" content="width=device-width" data-next-head=""><script async="" src="https://sb.scorecardresearch.com…
+20:11:53 [INFO] rightmove: no jsonModel, trying __NEXT_DATA__
+20:11:53 [INFO] rightmove: found 4 properties via __NEXT_DATA__.searchResults.properties
+20:11:53 [INFO] rightmove: 4 listings via crawl4ai (+5 cookies)
+20:11:59 [INFO] Loaded 5 cookies for rightmove from rightmove.json
+20:11:59 [INFO] ═ FETCH RIGHTMOVE (+5 cookies) ═ https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=OUTCODE^2446&maxPrice=70000&minPrice=20000&sortType=1&propertyTypes=flat%2Cterraced&includeSSTC=false&tenure=freehold%2Cleasehold%2CshareOfFreehold
+20:11:59 [INFO] crawl4ai: injecting 5 cookies
+20:12:07 [INFO] ✓ crawl4ai: 553766 chars
+20:12:07 [INFO] zoopla HTML start (553766 total): <!DOCTYPE html><html lang="en-GB" class="js"><head><script id="usercentrics-cmp" src="https://web.cmp.usercentrics.eu/ui/loader.js" data-settings-id="JwipkTveE9qPpB" async=""></script><meta charset="u…
+20:12:07 [WARNING] zoopla: no __NEXT_DATA__ script tag found
+20:12:07 [INFO] zoopla: 0 listings parsed (total html 553766 chars)
+20:12:07 [INFO] ✓ crawl4ai: 1445669 chars
+20:12:07 [INFO] rightmove HTML start (1445669 total): <!DOCTYPE html><html lang="en"><head><meta charset="utf-8" data-next-head=""><meta name="viewport" content="width=device-width" data-next-head=""><script async="" src="https://sb.scorecardresearch.com…
+20:12:07 [INFO] rightmove: no jsonModel, trying __NEXT_DATA__
+20:12:07 [INFO] rightmove: found 24 properties via __NEXT_DATA__.searchResults.properties
+20:12:07 [INFO] rightmove: 24 listings via crawl4ai (+5 cookies)
+20:12:13 [INFO] ═ FETCH ZOOPLA (no cookies) ═ https://www.zoopla.co.uk/for-sale/property/sunderland/?price_max=70000&price_min=20000&results_sort=lowest_price
+20:12:13 [INFO] Loaded 5 cookies for rightmove from rightmove.json
+20:12:13 [INFO] ═ FETCH RIGHTMOVE (+5 cookies) ═ https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=OUTCODE^2683&maxPrice=70000&minPrice=20000&sortType=1&propertyTypes=flat%2Cterraced&includeSSTC=false&tenure=freehold%2Cleasehold%2CshareOfFreehold
+20:12:13 [INFO] crawl4ai: injecting 5 cookies
+20:12:21 [INFO] ✓ crawl4ai: 1460770 chars
+20:12:21 [INFO] rightmove HTML start (1460770 total): <!DOCTYPE html><html lang="en"><head><meta charset="utf-8" data-next-head=""><meta name="viewport" content="width=device-width" data-next-head=""><script async="" src="https://sb.scorecardresearch.com…
+20:12:21 [INFO] rightmove: no jsonModel, trying __NEXT_DATA__
+20:12:21 [INFO] rightmove: found 25 properties via __NEXT_DATA__.searchResults.properties
+20:12:21 [INFO] rightmove: 25 listings via crawl4ai (+5 cookies)
+20:12:27 [INFO] Loaded 5 cookies for rightmove from rightmove.json
+20:12:27 [INFO] ═ FETCH RIGHTMOVE (+5 cookies) ═ https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=OUTCODE^2705&maxPrice=70000&minPrice=20000&sortType=1&propertyTypes=flat%2Cterraced&includeSSTC=false&tenure=freehold%2Cleasehold%2CshareOfFreehold
+20:12:27 [INFO] crawl4ai: injecting 5 cookies
+20:12:35 [INFO] ✓ crawl4ai: 1459216 chars
+20:12:35 [INFO] rightmove HTML start (1459216 total): <!DOCTYPE html><html lang="en"><head><meta charset="utf-8" data-next-head=""><meta name="viewport" content="width=device-width" data-next-head=""><script async="" src="https://sb.scorecardresearch.com…
+20:12:35 [INFO] rightmove: no jsonModel, trying __NEXT_DATA__
+20:12:35 [INFO] rightmove: found 23 properties via __NEXT_DATA__.searchResults.properties
+20:12:35 [INFO] rightmove: 23 listings via crawl4ai (+5 cookies)
+20:12:41 [INFO] ═ FETCH ZOOPLA (no cookies) ═ https://www.zoopla.co.uk/for-sale/property/newcastle-upon-tyne/?price_max=70000&price_min=20000&results_sort=lowest_price
+20:13:19 [INFO] ✓ crawl4ai: 262692 chars
+20:13:19 [INFO] zoopla HTML start (262692 total): <!DOCTYPE html><html lang="en-GB" class="js"><head><script id="usercentrics-cmp" src="https://web.cmp.usercentrics.eu/ui/loader.js" data-settings-id="JwipkTveE9qPpB" async=""></script><meta charset="u…
+20:13:19 [WARNING] zoopla: no __NEXT_DATA__ script tag found
+20:13:19 [INFO] zoopla: 0 listings parsed (total html 262692 chars)
+20:13:19 [INFO] ══════ LIVE SCRAPE DONE: 84 total listings, 3 errors ══════
+20:13:48 [INFO] ✓ crawl4ai: 535132 chars
+20:13:48 [INFO] zoopla HTML start (535132 total): <!DOCTYPE html><html lang="en-GB" class="js"><head><script id="usercentrics-cmp" src="https://web.cmp.usercentrics.eu/ui/loader.js" data-settings-id="JwipkTveE9qPpB" async=""></script><meta charset="u…
+20:13:48 [WARNING] zoopla: no __NEXT_DATA__ script tag found
+20:13:48 [INFO] zoopla: 0 listings parsed (total html 535132 chars)
+20:13:54 [INFO] ═ FETCH ZOOPLA (no cookies) ═ https://www.zoopla.co.uk/for-sale/property/middlesbrough/?price_max=70000&price_min=20000&results_sort=lowest_price
+20:14:55 [WARNING] crawl4ai: status None, html_len 0 — insufficient content
+20:14:55 [INFO] ✗ crawl4ai failed → requests (no cookies)
+20:14:55 [WARNING] requests fallback failed: 403 Client Error: Forbidden for url: https://www.zoopla.co.uk/for-sale/property/middlesbrough/?price_max=70000&price_min=20000&results_sort=lowest_price
+20:14:55 [WARNING] ✗✗ both layers failed for zoopla: https://www.zoopla.co.uk/for-sale/property/middlesbrough/?price_max=70000&price_min=20000&results_sort=lowest_price
+20:15:01 [INFO] ═ FETCH ZOOPLA (no cookies) ═ https://www.zoopla.co.uk/for-sale/property/sunderland/?price_max=70000&price_min=20000&results_sort=lowest_price
+20:16:01 [WARNING] crawl4ai: status None, html_len 0 — insufficient content
+20:16:01 [INFO] ✗ crawl4ai failed → requests (no cookies)
+20:16:01 [WARNING] requests fallback failed: 403 Client Error: Forbidden for url: https://www.zoopla.co.uk/for-sale/property/sunderland/?price_max=70000&price_min=20000&results_sort=lowest_price
+20:16:01 [WARNING] ✗✗ both layers failed for zoopla: https://www.zoopla.co.uk/for-sale/property/sunderland/?price_max=70000&price_min=20000&results_sort=lowest_price
+20:16:01 [INFO] ══════ LIVE SCRAPE DONE: 84 total listings, 3 errors ══════
+22:11:05 [INFO] Loaded 5 cookies for rightmove from rightmove.json
+22:11:05 [INFO] ═ FETCH RIGHTMOVE (+5 cookies) ═ https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=OUTCODE^1720&maxPrice=70000&minPrice=20000&sortType=1&propertyTypes=flat%2Cterraced&includeSSTC=false&tenure=freehold&dontShow=newHome%2CretirementHome%2CbuyingSchemes%2CauctionProperty
+22:11:06 [INFO] crawl4ai: injecting 5 cookies
+22:12:13 [INFO] ✓ crawl4ai: 199488 chars
+22:12:13 [INFO] rightmove HTML start (199488 total): <!DOCTYPE html><html lang="en-GB"><head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width"> <meta name="description" content="You could try refreshing the page or retyping the …
+22:12:13 [INFO] rightmove: no jsonModel, trying __NEXT_DATA__
+22:12:13 [WARNING] rightmove: __NEXT_DATA__ script tag not found
+22:12:13 [INFO] rightmove: 0 listings (html 199488 chars)
+22:12:19 [INFO] Loaded 5 cookies for rightmove from rightmove.json
+22:12:19 [INFO] ═ FETCH RIGHTMOVE (+5 cookies) ═ https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=OUTCODE^1732&maxPrice=70000&minPrice=20000&sortType=1&propertyTypes=flat%2Cterraced&includeSSTC=false&tenure=freehold&dontShow=newHome%2CretirementHome%2CbuyingSchemes%2CauctionProperty
+22:12:19 [INFO] crawl4ai: injecting 5 cookies
+22:13:26 [INFO] ✓ crawl4ai: 199488 chars
+22:13:26 [INFO] rightmove HTML start (199488 total): <!DOCTYPE html><html lang="en-GB"><head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width"> <meta name="description" content="You could try refreshing the page or retyping the …
+22:13:26 [INFO] rightmove: no jsonModel, trying __NEXT_DATA__
+22:13:26 [WARNING] rightmove: __NEXT_DATA__ script tag not found
+22:13:26 [INFO] rightmove: 0 listings (html 199488 chars)
+22:13:32 [INFO] Loaded 5 cookies for rightmove from rightmove.json
+22:13:32 [INFO] ═ FETCH RIGHTMOVE (+5 cookies) ═ https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=OUTCODE^2446&maxPrice=70000&minPrice=20000&sortType=1&propertyTypes=flat%2Cterraced&includeSSTC=false&tenure=freehold&dontShow=newHome%2CretirementHome%2CbuyingSchemes%2CauctionProperty
+22:13:32 [INFO] crawl4ai: injecting 5 cookies
+22:14:38 [INFO] ✓ crawl4ai: 199488 chars
+22:14:38 [INFO] rightmove HTML start (199488 total): <!DOCTYPE html><html lang="en-GB"><head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width"> <meta name="description" content="You could try refreshing the page or retyping the …
+22:14:38 [INFO] rightmove: no jsonModel, trying __NEXT_DATA__
+22:14:38 [WARNING] rightmove: __NEXT_DATA__ script tag not found
+22:14:38 [INFO] rightmove: 0 listings (html 199488 chars)
+22:14:44 [INFO] Loaded 5 cookies for rightmove from rightmove.json
+22:14:44 [INFO] ═ FETCH RIGHTMOVE (+5 cookies) ═ https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=OUTCODE^2683&maxPrice=70000&minPrice=20000&sortType=1&propertyTypes=flat%2Cterraced&includeSSTC=false&tenure=freehold&dontShow=newHome%2CretirementHome%2CbuyingSchemes%2CauctionProperty
+22:14:44 [INFO] crawl4ai: injecting 5 cookies
+22:15:51 [INFO] ✓ crawl4ai: 199502 chars
+22:15:51 [INFO] rightmove HTML start (199502 total): <!DOCTYPE html><html lang="en-GB"><head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width"> <meta name="description" content="You could try refreshing the page or retyping the …
+22:15:51 [INFO] rightmove: no jsonModel, trying __NEXT_DATA__
+22:15:51 [WARNING] rightmove: __NEXT_DATA__ script tag not found
+22:15:51 [INFO] rightmove: 0 listings (html 199502 chars)
+22:15:57 [INFO] Loaded 5 cookies for rightmove from rightmove.json
+22:15:57 [INFO] ═ FETCH RIGHTMOVE (+5 cookies) ═ https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=OUTCODE^2705&maxPrice=70000&minPrice=20000&sortType=1&propertyTypes=flat%2Cterraced&includeSSTC=false&tenure=freehold&dontShow=newHome%2CretirementHome%2CbuyingSchemes%2CauctionProperty
+22:15:57 [INFO] crawl4ai: injecting 5 cookies
+22:17:04 [INFO] ✓ crawl4ai: 199488 chars
+22:17:04 [INFO] rightmove HTML start (199488 total): <!DOCTYPE html><html lang="en-GB"><head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width"> <meta name="description" content="You could try refreshing the page or retyping the …
+22:17:04 [INFO] rightmove: no jsonModel, trying __NEXT_DATA__
+22:17:04 [WARNING] rightmove: __NEXT_DATA__ script tag not found
+22:17:04 [INFO] rightmove: 0 listings (html 199488 chars)
+22:17:10 [INFO] ═ FETCH ZOOPLA (no cookies) ═ https://www.zoopla.co.uk/for-sale/property/newcastle-upon-tyne/?price_max=70000&price_min=20000&results_sort=lowest_price
+22:18:16 [INFO] ✓ crawl4ai: 536865 chars
+22:18:16 [INFO] zoopla HTML start (536865 total): <!DOCTYPE html><html lang="en-GB" class="js"><head><script id="usercentrics-cmp" src="https://web.cmp.usercentrics.eu/ui/loader.js" data-settings-id="JwipkTveE9qPpB" async=""></script><meta charset="u…
+22:18:16 [WARNING] zoopla: no __NEXT_DATA__ script tag found
+22:18:16 [INFO] zoopla: 0 listings parsed (total html 536865 chars)
+22:18:22 [INFO] ═ FETCH ZOOPLA (no cookies) ═ https://www.zoopla.co.uk/for-sale/property/middlesbrough/?price_max=70000&price_min=20000&results_sort=lowest_price
+22:19:28 [INFO] ✓ crawl4ai: 555825 chars
+22:19:28 [INFO] zoopla HTML start (555825 total): <!DOCTYPE html><html lang="en-GB" class="js"><head><script id="usercentrics-cmp" src="https://web.cmp.usercentrics.eu/ui/loader.js" data-settings-id="JwipkTveE9qPpB" async=""></script><meta charset="u…
+22:19:28 [WARNING] zoopla: no __NEXT_DATA__ script tag found
+22:19:28 [INFO] zoopla: 0 listings parsed (total html 555825 chars)
+22:19:34 [INFO] ═ FETCH ZOOPLA (no cookies) ═ https://www.zoopla.co.uk/for-sale/property/sunderland/?price_max=70000&price_min=20000&results_sort=lowest_price
+22:20:40 [INFO] ✓ crawl4ai: 262704 chars
+22:20:40 [INFO] zoopla HTML start (262704 total): <!DOCTYPE html><html lang="en-GB" class="js"><head><script id="usercentrics-cmp" src="https://web.cmp.usercentrics.eu/ui/loader.js" data-settings-id="JwipkTveE9qPpB" async=""></script><meta charset="u…
+22:20:40 [WARNING] zoopla: no __NEXT_DATA__ script tag found
+22:20:40 [INFO] zoopla: 0 listings parsed (total html 262704 chars)
+22:20:40 [INFO] ══════ LIVE SCRAPE DONE: 0 total listings, 8 errors ══════
+18:39:54 [INFO] Loaded 5 cookies for rightmove from rightmove.json
+18:39:54 [INFO] ═ FETCH RIGHTMOVE (+5 cookies) ═ https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=OUTCODE^1720&maxPrice=70000&minPrice=20000&sortType=1&propertyTypes=flat%2Cterraced&includeSSTC=false&tenure=freehold
+18:39:56 [INFO] crawl4ai: injecting 5 cookies
+18:40:09 [INFO] ✓ crawl4ai: 1156179 chars
+18:40:09 [INFO] rightmove HTML start (1156179 total): <!DOCTYPE html><html lang="en"><head><meta charset="utf-8" data-next-head=""><meta name="viewport" content="width=device-width" data-next-head=""><script async="" src="https://sb.scorecardresearch.com…
+18:40:09 [INFO] rightmove: no jsonModel, trying __NEXT_DATA__
+18:40:09 [INFO] rightmove: found 11 properties via __NEXT_DATA__.searchResults.properties
+18:40:09 [INFO] rightmove: 11 listings via crawl4ai (+5 cookies)
+18:40:15 [INFO] Loaded 5 cookies for rightmove from rightmove.json
+18:40:15 [INFO] ═ FETCH RIGHTMOVE (+5 cookies) ═ https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=OUTCODE^1732&maxPrice=70000&minPrice=20000&sortType=1&propertyTypes=flat%2Cterraced&includeSSTC=false&tenure=freehold
+18:40:15 [INFO] crawl4ai: injecting 5 cookies
+18:40:22 [INFO] ✓ crawl4ai: 965439 chars
+18:40:22 [INFO] rightmove HTML start (965439 total): <!DOCTYPE html><html lang="en"><head><meta charset="utf-8" data-next-head=""><meta name="viewport" content="width=device-width" data-next-head=""><script async="" src="https://sb.scorecardresearch.com…
+18:40:22 [INFO] rightmove: no jsonModel, trying __NEXT_DATA__
+18:40:22 [INFO] rightmove: found 4 properties via __NEXT_DATA__.searchResults.properties
+18:40:22 [INFO] rightmove: 4 listings via crawl4ai (+5 cookies)
+18:40:28 [INFO] Loaded 5 cookies for rightmove from rightmove.json
+18:40:28 [INFO] ═ FETCH RIGHTMOVE (+5 cookies) ═ https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=OUTCODE^2446&maxPrice=70000&minPrice=20000&sortType=1&propertyTypes=flat%2Cterraced&includeSSTC=false&tenure=freehold
+18:40:28 [INFO] crawl4ai: injecting 5 cookies
+18:40:35 [INFO] ✓ crawl4ai: 1484997 chars
+18:40:35 [INFO] rightmove HTML start (1484997 total): <!DOCTYPE html><html lang="en"><head><meta charset="utf-8" data-next-head=""><meta name="viewport" content="width=device-width" data-next-head=""><script async="" src="https://sb.scorecardresearch.com…
+18:40:35 [INFO] rightmove: no jsonModel, trying __NEXT_DATA__
+18:40:35 [INFO] rightmove: found 24 properties via __NEXT_DATA__.searchResults.properties
+18:40:35 [INFO] rightmove: 24 listings via crawl4ai (+5 cookies)
+18:40:41 [INFO] Loaded 5 cookies for rightmove from rightmove.json
+18:40:41 [INFO] ═ FETCH RIGHTMOVE (+5 cookies) ═ https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=OUTCODE^2683&maxPrice=70000&minPrice=20000&sortType=1&propertyTypes=flat%2Cterraced&includeSSTC=false&tenure=freehold
+18:40:41 [INFO] crawl4ai: injecting 5 cookies
+18:40:48 [INFO] ✓ crawl4ai: 1491475 chars
+18:40:48 [INFO] rightmove HTML start (1491475 total): <!DOCTYPE html><html lang="en"><head><meta charset="utf-8" data-next-head=""><meta name="viewport" content="width=device-width" data-next-head=""><script async="" src="https://sb.scorecardresearch.com…
+18:40:48 [INFO] rightmove: no jsonModel, trying __NEXT_DATA__
+18:40:48 [INFO] rightmove: found 25 properties via __NEXT_DATA__.searchResults.properties
+18:40:48 [INFO] rightmove: 25 listings via crawl4ai (+5 cookies)
+18:40:54 [INFO] Loaded 5 cookies for rightmove from rightmove.json
+18:40:54 [INFO] ═ FETCH RIGHTMOVE (+5 cookies) ═ https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=OUTCODE^2705&maxPrice=70000&minPrice=20000&sortType=1&propertyTypes=flat%2Cterraced&includeSSTC=false&tenure=freehold
+18:40:54 [INFO] crawl4ai: injecting 5 cookies
+18:41:02 [INFO] ✓ crawl4ai: 1347627 chars
+18:41:02 [INFO] rightmove HTML start (1347627 total): <!DOCTYPE html><html lang="en"><head><meta charset="utf-8" data-next-head=""><meta name="viewport" content="width=device-width" data-next-head=""><script async="" src="https://sb.scorecardresearch.com…
+18:41:02 [INFO] rightmove: no jsonModel, trying __NEXT_DATA__
+18:41:02 [INFO] rightmove: found 18 properties via __NEXT_DATA__.searchResults.properties
+18:41:02 [INFO] rightmove: 18 listings via crawl4ai (+5 cookies)
+18:41:08 [INFO] ═ FETCH ZOOPLA (no cookies) ═ https://www.zoopla.co.uk/for-sale/property/newcastle-upon-tyne/?price_max=70000&price_min=20000&results_sort=lowest_price
+18:42:09 [WARNING] crawl4ai: status None, html_len 0 — insufficient content
+18:42:09 [INFO] ✗ crawl4ai failed → requests (no cookies)
+18:42:09 [WARNING] requests fallback failed: 403 Client Error: Forbidden for url: https://www.zoopla.co.uk/for-sale/property/newcastle-upon-tyne/?price_max=70000&price_min=20000&results_sort=lowest_price
+18:42:09 [WARNING] ✗✗ both layers failed for zoopla: https://www.zoopla.co.uk/for-sale/property/newcastle-upon-tyne/?price_max=70000&price_min=20000&results_sort=lowest_price
+18:42:15 [INFO] ═ FETCH ZOOPLA (no cookies) ═ https://www.zoopla.co.uk/for-sale/property/middlesbrough/?price_max=70000&price_min=20000&results_sort=lowest_price
+18:43:15 [WARNING] crawl4ai: status None, html_len 0 — insufficient content
+18:43:15 [INFO] ✗ crawl4ai failed → requests (no cookies)
+18:43:16 [WARNING] requests fallback failed: 403 Client Error: Forbidden for url: https://www.zoopla.co.uk/for-sale/property/middlesbrough/?price_max=70000&price_min=20000&results_sort=lowest_price
+18:43:16 [WARNING] ✗✗ both layers failed for zoopla: https://www.zoopla.co.uk/for-sale/property/middlesbrough/?price_max=70000&price_min=20000&results_sort=lowest_price
+18:43:22 [INFO] ═ FETCH ZOOPLA (no cookies) ═ https://www.zoopla.co.uk/for-sale/property/sunderland/?price_max=70000&price_min=20000&results_sort=lowest_price
+18:44:22 [WARNING] crawl4ai: status None, html_len 0 — insufficient content
+18:44:22 [INFO] ✗ crawl4ai failed → requests (no cookies)
+18:44:22 [WARNING] requests fallback failed: 403 Client Error: Forbidden for url: https://www.zoopla.co.uk/for-sale/property/sunderland/?price_max=70000&price_min=20000&results_sort=lowest_price
+18:44:22 [WARNING] ✗✗ both layers failed for zoopla: https://www.zoopla.co.uk/for-sale/property/sunderland/?price_max=70000&price_min=20000&results_sort=lowest_price
+18:44:22 [INFO] ══════ LIVE SCRAPE DONE: 82 total listings, 3 errors ══════

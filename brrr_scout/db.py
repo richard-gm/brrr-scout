@@ -1,5 +1,7 @@
 """SQLite storage for BRRR Scout."""
-import sqlite3, json, time, pathlib
+import logging, sqlite3, json, time, pathlib
+
+log = logging.getLogger("brrr_scout.db")
 
 DB_PATH = pathlib.Path(__file__).parent.parent / "data" / "brrr_scout.db"
 
@@ -41,6 +43,7 @@ CREATE TABLE IF NOT EXISTS analyses (
 
 def conn():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    log.debug("Opening database: %s", DB_PATH)
     c = sqlite3.connect(DB_PATH)
     c.row_factory = sqlite3.Row
     c.executescript(SCHEMA)
@@ -76,6 +79,7 @@ def upsert_property(c, p):
     return pid
 
 def save_comps(c, outcode, comps):
+    log.info("save_comps: saving %d comps for outcode %s", len(comps), outcode)
     c.execute("DELETE FROM sold_comps WHERE outcode=?", (outcode,))
     now = time.time()
     for x in comps:
@@ -84,6 +88,7 @@ def save_comps(c, outcode, comps):
     c.commit()
 
 def save_analysis(c, pid, a):
+    log.debug("save_analysis: saving analysis for property %d", pid)
     a = dict(a)
     a["conversion_json"] = json.dumps(a.get("conversion") or {})
     a["ai_json"] = json.dumps(a.get("ai") or {})
@@ -151,6 +156,7 @@ CHECKLIST_ITEMS = [
 ]
 
 def _migrate(c):
+    log.debug("Running migration v2")
     c.executescript(MIGRATION_V2)
     for col in ("comp_confidence TEXT", "comp_basis TEXT"):
         try:
@@ -198,6 +204,7 @@ _V4_COLS = [
 ]
 
 def _migrate_v4(c):
+    log.debug("Running migration v4")
     for table, col in _V4_COLS:
         try:
             c.execute(f"ALTER TABLE {table} ADD COLUMN {col}")
@@ -229,6 +236,7 @@ CREATE TABLE IF NOT EXISTS portfolio (
 """
 
 def _migrate_v3(c):
+    log.debug("Running migration v3")
     c.executescript(MIGRATION_V3)
     c.commit()
 
@@ -277,6 +285,7 @@ _V5_COLS = [
 ]
 
 def _migrate_v5(c):
+    log.debug("Running migration v5")
     c.executescript(MIGRATION_V5)
     for table, col in _V5_COLS:
         try:

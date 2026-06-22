@@ -10,3 +10,4 @@ data/brrr_scout.db
 data/packs/
 data/cookies/*.json
 data/inbox/
+data/logs.txt

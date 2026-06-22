@@ -41,6 +41,11 @@ h2{font-family:var(--disp);font-stretch:125%;font-weight:800;font-size:16px;text
 .notice{font-family:var(--mono);font-size:12px;color:#5A6772;padding:10px;background:#F6F7F8;border:1px solid var(--line);margin-bottom:14px}
 .conf{display:inline-block;font-family:var(--mono);font-size:10px;padding:1px 6px;border:1px solid}
 .conf-high{color:var(--pass);border-color:var(--pass)}.conf-medium{color:var(--thin);border-color:var(--thin)}.conf-low,.conf-none{color:var(--walk);border-color:var(--walk)}
+.comp-table th.sortable{cursor:pointer;user-select:none}
+.comp-table th.sortable:hover{color:var(--ink)}
+.comp-table th.sortable::after{content:' ⇅';font-size:9px;opacity:.4}
+.comp-table th.sort-asc::after{content:' ↑';opacity:1}
+.comp-table th.sort-desc::after{content:' ↓';opacity:1}
 </style>
 </head>
 <body>
@@ -71,10 +76,17 @@ h2{font-family:var(--disp);font-stretch:125%;font-weight:800;font-size:16px;text
   <div class="panel">
     <h3>EPC — {{ postcode }}</h3>
     <span class="epc-badge epc-{{ epc.epc_rating|lower if epc.epc_rating else 'x' }}">{{ epc.epc_rating or '?' }}</span>
+    {% if epc.potential_rating %}<span class="epc-badge epc-{{ epc.potential_rating|lower }}" style="opacity:.6;margin-left:6px">Potential {{ epc.potential_rating }}</span>{% endif %}
     <dl class="kv">
-      <dt>Floor area</dt><dd>{{ epc.floor_area }}m²</dd>
+      <dt>Floor area</dt><dd>{{ epc.floor_area or '—' }}m²</dd>
+      <dt>Heated rooms</dt><dd>{{ epc.heated_rooms or '—' }}</dd>
       <dt>Property type</dt><dd>{{ epc.property_type or '—' }}</dd>
       <dt>Construction</dt><dd>{{ epc.construction_age or '—' }}</dd>
+      <dt>Main fuel</dt><dd>{{ epc.main_fuel or '—' }}</dd>
+      <dt>Energy consumption</dt><dd>{{ epc.energy_consumption or '—' }} kWh/m²/yr</dd>
+      <dt>CO₂ emissions</dt><dd>{{ epc.co2_emissions or '—' }} tonnes/yr</dd>
+      <dt>Double glazing</dt><dd>{{ epc.multi_glaze_pct or '—' }}%</dd>
+      <dt>EPC lodged</dt><dd>{{ epc.lodgement_date or '—' }}</dd>
     </dl>
   </div>
   {% else %}
@@ -87,19 +99,44 @@ h2{font-family:var(--disp);font-stretch:125%;font-weight:800;font-size:16px;text
     </h3>
     {% if comps %}
     <p style="font-size:12px;color:#5A6772;margin:0 0 10px">Land Registry Price Paid data — typically 6–8 week publication lag.</p>
-    <table class="comp-table">
-      <thead><tr><th>Date</th><th>Address</th><th>Type</th><th style="text-align:right">Price</th></tr></thead>
+    <table class="comp-table" id="comp-table">
+      <thead><tr>
+        <th class="sortable" data-col="0" data-type="date">Date</th>
+        <th>Address</th>
+        <th>Type</th>
+        <th class="sortable" data-col="3" data-type="num" style="text-align:right">Price</th>
+      </tr></thead>
       <tbody>
       {% for c in comps[:15] %}
       <tr>
-        <td>{{ c.sold_date }}</td>
+        <td data-val="{{ c.sold_date }}">{{ c.sold_date[8:10] }}/{{ c.sold_date[5:7] }}/{{ c.sold_date[0:4] }}</td>
         <td>{{ c.address or '—' }}</td>
         <td>{{ c.prop_type or '—' }}</td>
-        <td style="text-align:right">£{{ '{:,}'.format(c.price) }}</td>
+        <td style="text-align:right" data-val="{{ c.price }}">£{{ '{:,}'.format(c.price) }}</td>
       </tr>
       {% endfor %}
       </tbody>
     </table>
+    <script>
+    document.querySelectorAll('#comp-table th.sortable').forEach(th=>{
+      th.addEventListener('click',()=>{
+        const col=+th.dataset.col, type=th.dataset.type;
+        const tbody=document.querySelector('#comp-table tbody');
+        const rows=[...tbody.querySelectorAll('tr')];
+        const asc=!th.classList.contains('sort-asc');
+        document.querySelectorAll('#comp-table th.sortable').forEach(h=>h.classList.remove('sort-asc','sort-desc'));
+        th.classList.add(asc?'sort-asc':'sort-desc');
+        rows.sort((a,b)=>{
+          let va=a.children[col].dataset.val||a.children[col].textContent.trim();
+          let vb=b.children[col].dataset.val||b.children[col].textContent.trim();
+          if(type==='num'){va=parseFloat(va.replace(/[^0-9.\-]/g,''))||0;vb=parseFloat(vb.replace(/[^0-9.\-]/g,''))||0;}
+          else{va=va.toLowerCase();vb=vb.toLowerCase();}
+          return asc?(va>vb?1:-1):(va<vb?1:-1);
+        });
+        rows.forEach(r=>tbody.appendChild(r));
+      });
+    });
+    </script>
     {% else %}
     <p style="font-size:13px;color:#5A6772">No recent sold prices found for outcode {{ outcode }}.</p>
     {% endif %}

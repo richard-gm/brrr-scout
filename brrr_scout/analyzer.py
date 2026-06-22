@@ -1,9 +1,26 @@
 """Sold comps (HM Land Registry, official + free), BRRR deal maths, EPC data,
 and AI analysis via the Claude API."""
-import os, json, statistics, base64, requests
+import logging, os, json, statistics, base64, requests
+
+log = logging.getLogger("brrr_scout.analyzer")
 
 LR_URL = "https://landregistry.data.gov.uk/data/ppi/transaction-record.json"
-EPC_URL = "https://epc.opendatacommunities.org/api/v1/domestic/search"
+
+_LR_MONTHS = {"Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
+              "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12}
+
+def _parse_lr_date(s):
+    """Parse 'Tue, 14 Sep 1999' → '1999-09-14'. Returns original string on failure."""
+    if not s:
+        return ""
+    try:
+        parts = s.split()
+        day = int(parts[1])
+        month = _LR_MONTHS.get(parts[2], 0)
+        year = int(parts[3])
+        return f"{year:04d}-{month:02d}-{day:02d}"
+    except (IndexError, ValueError):
+        return s
 
 # ---- assumptions (mirror the spreadsheet) ----
 A = dict(rate=0.0525, ltv=0.75, fees=2500,
@@ -28,6 +45,7 @@ def calc_sdlt(price):
 
 def fetch_sold_comps(postcode_or_outcode, max_pages=3):
     """HM Land Registry Price Paid Data. Filter to recent sales client-side."""
+    log.info("fetch_sold_comps: querying LR API for '%s' (max_pages=%d)", postcode_or_outcode, max_pages)
     comps, page = [], 0
     while page < max_pages:
         try:
@@ -36,22 +54,36 @@ def fetch_sold_comps(postcode_or_outcode, max_pages=3):
                 "_pageSize": 200, "_page": page}, timeout=25)
             r.raise_for_status()
             items = r.json().get("result", {}).get("items", [])
-        except (requests.RequestException, ValueError):
+        except (requests.RequestException, ValueError) as e:
+            log.warning("fetch_sold_comps: LR API error on page %d for '%s': %s", page, postcode_or_outcode, e)
             break
         if not items:
+            log.info("fetch_sold_comps: no items on page %d for '%s'", page, postcode_or_outcode)
             break
+        log.info("fetch_sold_comps: page %d returned %d items for '%s'", page, len(items), postcode_or_outcode)
         for it in items:
             ad = it.get("propertyAddress", {})
+            raw_date = it.get("transactionDate") or ""
+            # Parse "Tue, 14 Sep 1999" → "1999-09-14"
+            sold_date = _parse_lr_date(raw_date)
+            pt = it.get("propertyType")
+            if isinstance(pt, dict):
+                prop_type = (pt.get("label") or [None])[0]
+                if isinstance(prop_type, dict):
+                    prop_type = prop_type.get("_value")
+            else:
+                prop_type = pt
             comps.append({
                 "postcode": ad.get("postcode"),
-                "address": ", ".join(x for x in [ad.get("paon"), ad.get("street"), ad.get("town")] if x),
+                "address": ", ".join(x for x in [ad.get("saon"), ad.get("paon"), ad.get("street"), ad.get("town")] if x),
                 "price": it.get("pricePaid"),
-                "sold_date": (it.get("transactionDate") or "")[:10],
-                "prop_type": (it.get("propertyType", {}).get("label", [""]) or [""])[0],
+                "sold_date": sold_date,
+                "prop_type": prop_type or "",
             })
         page += 1
     comps = [c for c in comps if c["price"]]
     comps.sort(key=lambda c: c["sold_date"], reverse=True)
+    log.info("fetch_sold_comps: %d total comps for '%s'", len(comps), postcode_or_outcode)
     return comps
 
 def comp_stats(comps, since="2024-01-01", price_cap=200000):
@@ -187,32 +219,72 @@ def analyse_deal(price, end_value, refurb, monthly_rent):
                 stress_pass=stress, verdict=verdict,
                 end_value=int(end_value), refurb_estimate=int(refurb), monthly_rent=int(monthly_rent))
 
-# ---- EPC data (Open Data Communities, free API key required) ----
+# ---- EPC data (new GOV.UK API, bearer token required) ----
+EPC_BASE = "https://api.get-energy-performance-data.communities.gov.uk"
+
+
+def _epc_headers():
+    key = os.environ.get("EPC_API_KEY")
+    if not key:
+        return None
+    return {"Authorization": f"Bearer {key}", "Accept": "application/json"}
+
+
 def fetch_epc(postcode):
     """Fetch the most recent EPC record for a postcode.
-    Register free at https://epc.opendatacommunities.org to get credentials."""
-    email = os.environ.get("EPC_API_EMAIL")
-    key = os.environ.get("EPC_API_KEY")
-    if not email or not key:
+    Log in at https://get-energy-performance-data.communities.gov.uk/ → My Account → get bearer token."""
+    headers = _epc_headers()
+    if not headers:
+        log.debug("fetch_epc: EPC_API_KEY not set — skipping")
         return None
-    auth = base64.b64encode(f"{email}:{key}".encode()).decode()
+    log.info("fetch_epc: searching EPC API for '%s'", postcode)
     try:
-        r = requests.get(EPC_URL,
-                         params={"postcode": postcode.replace(" ", "+"), "size": 1},
-                         headers={"Authorization": f"Basic {auth}", "Accept": "application/json"},
-                         timeout=15)
-        r.raise_for_status()
-        rows = r.json().get("rows", [])
-        if not rows:
+        # Step 1: search by postcode to get certificate number
+        r = requests.get(f"{EPC_BASE}/api/domestic/search",
+                         params={"postcode": postcode.replace(" ", "+")},
+                         headers=headers, timeout=15)
+        log.info("fetch_epc: search HTTP %d for '%s'", r.status_code, postcode)
+        if r.status_code == 404:
+            log.info("fetch_epc: no EPC records for '%s'", postcode)
             return None
-        row = rows[0]
-        return {
-            "epc_rating": row.get("current-energy-rating"),
-            "floor_area": row.get("total-floor-area"),
-            "property_type": row.get("property-type"),
-            "construction_age": row.get("construction-age-band"),
+        if r.status_code != 200:
+            log.warning("fetch_epc: search failed for '%s': %s — %s", postcode, r.status_code, r.text[:300])
+            return None
+        data = r.json().get("data", [])
+        if not data:
+            log.info("fetch_epc: empty results for '%s'", postcode)
+            return None
+        # Use the most recent certificate
+        cert = data[0]
+        cert_num = cert.get("certificateNumber")
+        if not cert_num:
+            return None
+        log.info("fetch_epc: fetching certificate %s for '%s'", cert_num, postcode)
+        # Step 2: fetch full certificate details
+        r2 = requests.get(f"{EPC_BASE}/api/certificate",
+                          params={"certificate_number": cert_num},
+                          headers=headers, timeout=15)
+        if r2.status_code != 200:
+            log.warning("fetch_epc: cert fetch failed: %s — %s", r2.status_code, r2.text[:300])
+            return None
+        row = r2.json().get("data", {})
+        result = {
+            "epc_rating": row.get("current_energy_efficiency_band") or row.get("current-energy-rating"),
+            "floor_area": row.get("total_floor_area") or row.get("total-floor-area"),
+            "property_type": row.get("property_type") or row.get("property-type"),
+            "construction_age": row.get("construction_age_band") or row.get("construction-age-band"),
+            "heated_rooms": row.get("number_heated_rooms") or row.get("number-heated-rooms"),
+            "potential_rating": row.get("potential_energy_efficiency_band") or row.get("potential-energy-rating"),
+            "energy_consumption": row.get("energy_consumption_current") or row.get("energy-consumption-current"),
+            "co2_emissions": row.get("co2_emissions_current") or row.get("co2-emissions-current"),
+            "main_fuel": row.get("main_fuel") or row.get("main-fuel"),
+            "multi_glaze_pct": row.get("multi_glaze_proportion") or row.get("multi-glaze-proportion"),
+            "lodgement_date": row.get("registration_date") or row.get("lodgement-date"),
         }
-    except (requests.RequestException, ValueError):
+        log.info("fetch_epc: %s -> rating=%s area=%s rooms=%s", postcode, result["epc_rating"], result["floor_area"], result["heated_rooms"])
+        return result
+    except (requests.RequestException, ValueError) as e:
+        log.warning("fetch_epc: API error for '%s': %s", postcode, e)
         return None
 
 
@@ -239,7 +311,9 @@ def analyse_deal_ai(deal_numbers, address, postcode):
     """Claude-generated narrative verdict. Returns dict or None if ANTHROPIC_API_KEY not set."""
     key = os.environ.get("ANTHROPIC_API_KEY")
     if not key:
+        log.debug("analyse_deal_ai: ANTHROPIC_API_KEY not set — skipping")
         return None
+    log.info("analyse_deal_ai: calling Claude API for %s, %s", address, postcode)
     payload = {**deal_numbers, "address": address, "postcode": postcode}
     try:
         r = requests.post(
@@ -253,8 +327,11 @@ def analyse_deal_ai(deal_numbers, address, postcode):
             timeout=30)
         r.raise_for_status()
         text = "".join(b.get("text", "") for b in r.json().get("content", []) if b.get("type") == "text")
-        return json.loads(text.replace("```json", "").replace("```", "").strip())
-    except (requests.RequestException, ValueError):
+        result = json.loads(text.replace("```json", "").replace("```", "").strip())
+        log.info("analyse_deal_ai: verdict=%s confidence=%s", result.get("verdict"), result.get("confidence"))
+        return result
+    except (requests.RequestException, ValueError) as e:
+        log.warning("analyse_deal_ai: Claude API error: %s", e)
         return None
 
 
@@ -265,9 +342,11 @@ def fetch_address_history(address, postcode=None):
     import datetime as _dt, re as _re
     if not address:
         return None
+    log.info("fetch_address_history: address=%s postcode=%s", address, postcode)
     part = address.split(",")[0].strip()
     m = _re.match(r'^(flat\s+\d+[a-z]?\s+\d+[a-z]?|\d+[a-z]?)\s+(.+)$', part, _re.I)
     if not m:
+        log.debug("fetch_address_history: could not parse address '%s'", address)
         return None
     params = {"propertyAddress.paon": m.group(1).strip(),
               "propertyAddress.street": m.group(2).strip(), "_pageSize": 10}
@@ -277,9 +356,11 @@ def fetch_address_history(address, postcode=None):
         r = requests.get(LR_URL, params=params, timeout=25)
         r.raise_for_status()
         items = r.json().get("result", {}).get("items", [])
-    except (requests.RequestException, ValueError):
+    except (requests.RequestException, ValueError) as e:
+        log.warning("fetch_address_history: LR API error for '%s': %s", address, e)
         return None
     if not items:
+        log.info("fetch_address_history: no records for '%s'", address)
         return None
     items.sort(key=lambda x: x.get("transactionDate", ""), reverse=True)
     latest = items[0]
@@ -319,9 +400,11 @@ Assess from the floorplan and respond ONLY with JSON, no markdown fences:
 def check_conversion(floorplan_url):
     key = os.environ.get("ANTHROPIC_API_KEY")
     if not key:
+        log.debug("check_conversion: ANTHROPIC_API_KEY not set — skipping")
         return {"convertible": "unknown", "summary": "Set ANTHROPIC_API_KEY to enable floorplan analysis."}
     if not floorplan_url:
         return {"convertible": "unknown", "summary": "No floorplan published for this listing."}
+    log.info("check_conversion: analysing floorplan %s", floorplan_url)
     try:
         img = requests.get(floorplan_url, timeout=20)
         img.raise_for_status()
@@ -364,7 +447,9 @@ for a buy-refurbish-refinance investor. Identify red flags. Respond ONLY with JS
 def analyse_legal_pack(pdf_path):
     key = os.environ.get("ANTHROPIC_API_KEY")
     if not key:
+        log.debug("analyse_legal_pack: ANTHROPIC_API_KEY not set — skipping")
         return {"risk": "UNKNOWN", "summary": "Set ANTHROPIC_API_KEY to enable legal pack analysis."}
+    log.info("analyse_legal_pack: analysing %s", pdf_path)
     try:
         with open(pdf_path, "rb") as f:
             b64 = base64.b64encode(f.read()).decode()

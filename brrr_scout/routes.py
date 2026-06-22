@@ -1,57 +1,74 @@
 """All Flask routes for BRRR Scout."""
-import json, os, pathlib, datetime as _dt
+import json, logging, os, pathlib, datetime as _dt
 from flask import render_template, redirect, url_for, request, flash, jsonify
 from werkzeug.utils import secure_filename
 from . import db, config, scrapers, analyzer
 
+log = logging.getLogger("brrr_scout.routes")
 _DATA = pathlib.Path(__file__).parent.parent / "data"
 
 
 def run_pipeline(app, listings):
     """Store listings, fetch comps + EPC per property, analyse each deal."""
+    log.info("Pipeline started — %d listings to process", len(listings))
     c = db.conn()
     outcode_cache = {}
     rental_cache = {}
     n = 0
-    for p in listings:
+    for i, p in enumerate(listings):
+        addr = p.get("address", "unknown")
         if not p.get("price") or not p.get("outcode"):
+            log.debug("Skipping listing %d/%d — missing price or outcode: %s", i+1, len(listings), addr)
             continue
-        if p.get("postcode") and not p.get("epc_rating"):
-            epc = analyzer.fetch_epc(p["postcode"])
-            if epc:
-                p.update(epc_rating=epc.get("epc_rating"), floor_area=epc.get("floor_area"))
-        pid = db.upsert_property(c, p)
-        oc = p["outcode"]
-        if oc not in outcode_cache:
-            comps = analyzer.fetch_sold_comps(oc)
-            db.save_comps(c, oc, comps)
-            outcode_cache[oc] = comps
-        count, median, conf, basis = analyzer.score_comps(outcode_cache[oc], p.get("address"), p.get("prop_type"))
-        end_value = min(median, int(p["price"] * 1.45)) if median else int(p["price"] * 1.30)
-        refurb = config.REFURB_HEAVY if (p.get("is_auction") and p["price"] < 45000) else config.REFURB_DEFAULT
-        if oc not in rental_cache:
-            cached = db.get_rental_comps(c, oc)
-            if cached is None:
-                fresh = scrapers.fetch_rental_comps(oc)
-                if fresh:
-                    db.save_rental_comps(c, oc, fresh)
-                    cached = fresh
-                else:
-                    cached = []
-            rental_cache[oc] = cached
-        rent_live = analyzer.median_rent_from_comps(rental_cache[oc], beds=p.get("bedrooms"))
-        rent = rent_live or analyzer.estimate_rent(end_value, oc)
-        a = analyzer.analyse_deal(p["price"], end_value, refurb, rent)
-        a.update(comp_count=count, comp_median=median, comp_confidence=conf, comp_basis=basis,
-                 rental_comp_count=len(rental_cache[oc]) if rental_cache[oc] else 0,
-                 rental_comp_median=rent_live)
-        if p.get("floorplan_url") and (p.get("bedrooms") or 0) == 1:
-            a["conversion"] = analyzer.check_conversion(p["floorplan_url"])
-        a["owner"] = analyzer.fetch_address_history(p.get("address"), p.get("postcode"))
-        a["ai"] = analyzer.analyse_deal_ai(a, p.get("address"), p.get("postcode"))
-        db.save_analysis(c, pid, a)
-        n += 1
+        log.info("Processing listing %d/%d: %s (£%s)", i+1, len(listings), addr, p.get("price"))
+        try:
+            if p.get("postcode") and not p.get("epc_rating"):
+                epc = analyzer.fetch_epc(p["postcode"])
+                if epc:
+                    p.update(epc_rating=epc.get("epc_rating"), floor_area=epc.get("floor_area"))
+                    log.info("  EPC: %s", epc.get("epc_rating"))
+            pid = db.upsert_property(c, p)
+            pc = p.get("postcode") or ""
+            oc = p["outcode"]
+            cache_key = pc.split()[0] if " " in pc else oc
+            if cache_key not in outcode_cache:
+                comps = analyzer.fetch_sold_comps(pc) if pc else []
+                if not comps:
+                    comps = analyzer.fetch_sold_comps(oc)
+                db.save_comps(c, oc, comps)
+                outcode_cache[cache_key] = comps
+                log.info("  Comps fetched: %d for %s", len(comps), cache_key)
+            count, median, conf, basis = analyzer.score_comps(outcode_cache[cache_key], p.get("address"), p.get("prop_type"))
+            log.info("  Comps score: count=%d median=%s confidence=%s basis=%s", count, median, conf, basis)
+            end_value = min(median, int(p["price"] * 1.45)) if median else int(p["price"] * 1.30)
+            refurb = config.REFURB_HEAVY if (p.get("is_auction") and p["price"] < 45000) else config.REFURB_DEFAULT
+            if oc not in rental_cache:
+                cached = db.get_rental_comps(c, oc)
+                if cached is None:
+                    fresh = scrapers.fetch_rental_comps(oc)
+                    if fresh:
+                        db.save_rental_comps(c, oc, fresh)
+                        cached = fresh
+                    else:
+                        cached = []
+                rental_cache[oc] = cached
+            rent_live = analyzer.median_rent_from_comps(rental_cache[oc], beds=p.get("bedrooms"))
+            rent = rent_live or analyzer.estimate_rent(end_value, oc)
+            a = analyzer.analyse_deal(p["price"], end_value, refurb, rent)
+            a.update(comp_count=count, comp_median=median, comp_confidence=conf, comp_basis=basis,
+                     rental_comp_count=len(rental_cache[oc]) if rental_cache[oc] else 0,
+                     rental_comp_median=rent_live)
+            if p.get("floorplan_url") and (p.get("bedrooms") or 0) == 1:
+                a["conversion"] = analyzer.check_conversion(p["floorplan_url"])
+            a["owner"] = analyzer.fetch_address_history(p.get("address"), p.get("postcode"))
+            a["ai"] = analyzer.analyse_deal_ai(a, p.get("address"), p.get("postcode"))
+            db.save_analysis(c, pid, a)
+            log.info("  Verdict: %s | ROI: %s | Cashflow: %s/yr", a.get("verdict"), a.get("roi"), a.get("net_cashflow_yr"))
+            n += 1
+        except Exception:
+            log.exception("Error processing listing %s", addr)
     c.close()
+    log.info("Pipeline finished — %d/%d listings processed", n, len(listings))
     return n
 
 
@@ -61,6 +78,7 @@ def init_app(app):
 
     @app.route("/")
     def index():
+        log.debug("GET /")
         c = db.conn()
         rows = db.deals(c)
         hist = {r["pid"]: [(h["seen_at"], h["price"]) for h in db.price_history(c, r["pid"])] for r in rows}
@@ -69,8 +87,8 @@ def init_app(app):
         for r in rows:
             d = dict(r)
             d["conversion"] = json.loads(r["conversion_json"]) if r["conversion_json"] else None
-            d["ai"] = json.loads(r["ai_json"]) if r.get("ai_json") and r["ai_json"] not in ("{}", "null") else None
-            raw_owner = r["owner_json"] if r.get("owner_json") else None
+            d["ai"] = json.loads(r["ai_json"]) if d.get("ai_json") and r["ai_json"] not in ("{}", "null") else None
+            raw_owner = r["owner_json"] if d.get("owner_json") else None
             d["owner"] = json.loads(raw_owner) if raw_owner and raw_owner not in ("{}", "null") else None
             d["history"] = hist.get(r["pid"], [])
             parsed.append(d)
@@ -98,6 +116,7 @@ def init_app(app):
 
     @app.route("/scan/live")
     def scan_live():
+        log.info("GET /scan/live — starting live scan")
         searches = []
         for s in config.SEARCHES:
             url = scrapers.rightmove_search_url(s["location_id"], config.MAX_PRICE, config.MIN_PRICE) \
@@ -105,13 +124,22 @@ def init_app(app):
                 scrapers.zoopla_search_url(s["area_slug"], config.MAX_PRICE, config.MIN_PRICE)
             searches.append({"portal": s["portal"], "url": url})
         listings, errors = scrapers.scrape_live(searches)
+        log.info("Live scan found %d listings, %d errors", len(listings), len(errors))
+        if errors:
+            for e in errors:
+                log.warning("Live scan error: %s", e)
         n = run_pipeline(app, listings)
         flash(f"Live scan: {n} listings analysed." + (f" Issues: {'; '.join(errors)}" if errors else ""))
         return redirect(url_for("index"))
 
     @app.route("/scan/inbox")
     def scan_inbox():
+        log.info("GET /scan/inbox — importing inbox files")
         listings, errors = scrapers.import_inbox()
+        log.info("Inbox import found %d listings, %d errors", len(listings), len(errors))
+        if errors:
+            for e in errors:
+                log.warning("Inbox import error: %s", e)
         n = run_pipeline(app, listings)
         flash(f"Inbox import: {n} listings analysed." + (f" Issues: {'; '.join(errors)}" if errors else ""))
         return redirect(url_for("index"))
@@ -121,6 +149,7 @@ def init_app(app):
     @app.route("/add", methods=["POST"])
     def add_manual():
         f = request.form
+        log.info("POST /add — address=%s price=%s", f.get("address"), f.get("price"))
         listing = {
             "source": "manual", "url": f.get("url") or f"manual-{f['address']}",
             "address": f["address"], "postcode": f.get("postcode"),
@@ -136,6 +165,7 @@ def init_app(app):
     @app.route("/api/scrape")
     def api_scrape():
         url = request.args.get("url", "").strip()
+        log.info("GET /api/scrape url=%s", url)
         if not url:
             return jsonify({"error": "url required"}), 400
         if "rightmove" in url:
@@ -143,14 +173,18 @@ def init_app(app):
         elif "zoopla" in url:
             portal = "zoopla"
         else:
+            log.warning("Unsupported URL: %s", url)
             return jsonify({"error": "Only Rightmove and Zoopla URLs are supported"}), 400
         html, _ = scrapers._fetch_with_fallback(url, portal)
         if not html:
+            log.warning("Could not fetch listing: %s", url)
             return jsonify({"error": "Could not fetch listing — save the page and use inbox import instead"}), 502
         parser = scrapers.parse_rightmove if portal == "rightmove" else scrapers.parse_zoopla
         listings = parser(html, url)
         if not listings:
+            log.warning("Fetched but no listings parsed from: %s", url)
             return jsonify({"error": "Page fetched but no listing data found — portal may be blocking scraping"}), 404
+        log.info("Scraped 1 listing from %s", portal)
         return jsonify(listings[0])
 
     # ---- Postcode lookup ----------------------------------------------------
@@ -158,12 +192,19 @@ def init_app(app):
     @app.route("/lookup")
     def lookup():
         pc = request.args.get("postcode", "").strip().upper()
+        log.info("GET /lookup postcode=%s", pc)
         if not pc:
             return render_template("lookup.html", postcode=None)
         epc = analyzer.fetch_epc(pc)
+        log.info("  EPC result: %s", epc)
         outcode = pc.split()[0] if " " in pc else pc
-        comps = analyzer.fetch_sold_comps(outcode)[:20]
+        comps = analyzer.fetch_sold_comps(pc)[:20]
+        log.info("  Sold comps (full postcode '%s'): %d results", pc, len(comps))
+        if not comps and outcode != pc:
+            comps = analyzer.fetch_sold_comps(outcode)[:20]
+            log.info("  Sold comps (outcode '%s' fallback): %d results", outcode, len(comps))
         _, median, conf, basis = analyzer.score_comps(comps, None, None)
+        log.info("  Comps score: median=%s confidence=%s basis=%s", median, conf, basis)
         return render_template("lookup.html", postcode=pc, epc=epc, comps=comps,
                                comp_median=median, comp_confidence=conf, comp_basis=basis,
                                outcode=outcode)
@@ -316,10 +357,15 @@ def init_app(app):
 
     @app.route("/portfolio/<int:pid>/revalue", methods=["POST"])
     def portfolio_revalue(pid):
+        log.info("POST /portfolio/%d/revalue", pid)
         c = db.conn()
         r = c.execute("SELECT * FROM portfolio WHERE id=?", (pid,)).fetchone()
         if r and r["outcode"]:
-            comps = analyzer.fetch_sold_comps(r["outcode"])
+            pc = r["postcode"] or ""
+            comps = analyzer.fetch_sold_comps(pc) if pc else []
+            if not comps:
+                comps = analyzer.fetch_sold_comps(r["outcode"])
+            log.info("  Revalue: %d comps for %s (postcode=%s)", len(comps), r["outcode"], pc)
             db.save_comps(c, r["outcode"], comps)
             n, val, conf, basis = analyzer.score_comps(comps, r["address"], r["prop_type"])
             if val:
