@@ -55,6 +55,7 @@ h2{font-family:var(--disp);font-stretch:125%;font-weight:800;font-size:16px;text
     <a class="btn" href="{{ url_for('index') }}">← Deal ledger</a>
     <a class="btn" href="{{ url_for('auctions') }}">Auction tracker</a>
     <a class="btn" href="{{ url_for('portfolio') }}">Portfolio</a>
+    <a class="btn" href="{{ url_for('settings') }}">Settings</a>
   </nav>
 </header>
 <main>
@@ -141,6 +142,82 @@ h2{font-family:var(--disp);font-stretch:125%;font-weight:800;font-size:16px;text
     <p style="font-size:13px;color:#5A6772">No recent sold prices found for outcode {{ outcode }}.</p>
     {% endif %}
   </div>
+
+  {% if comps %}
+  <div class="panel" id="map-panel">
+    <h3>Map view — sold prices</h3>
+    <div id="comp-map" style="height:420px"></div>
+  </div>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+  (async function(){
+    const COMPS = {{ comps | tojson }};
+    const pcs=[...new Set(COMPS.map(c=>c.postcode).filter(Boolean))];
+    if(!pcs.length){document.getElementById('map-panel').style.display='none';return;}
+    let geo={};
+    try{
+      const r=await fetch('https://api.postcodes.io/postcodes',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({postcodes:pcs.slice(0,100)})
+      });
+      const data=await r.json();
+      (data.result||[]).forEach(item=>{
+        if(item.result)geo[item.query]=[item.result.latitude,item.result.longitude];
+      });
+    }catch(e){}
+    /* fallback: geocode just the searched postcode for map center */
+    if(!Object.keys(geo).length){
+      try{
+        const r=await fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent('{{ postcode }}'));
+        const d=await r.json();
+        if(d.result)geo['{{ postcode }}']=[d.result.latitude,d.result.longitude];
+      }catch(e){}
+    }
+    const pts=Object.values(geo);
+    if(!pts.length){document.getElementById('map-panel').style.display='none';return;}
+    const lat=pts.reduce((a,b)=>a+b[0],0)/pts.length;
+    const lng=pts.reduce((a,b)=>a+b[1],0)/pts.length;
+    const prices=COMPS.map(c=>c.price).filter(Boolean).sort((a,b)=>a-b);
+    const q1=prices[Math.floor(prices.length*.25)]||0;
+    const q2=prices[Math.floor(prices.length*.50)]||0;
+    const q3=prices[Math.floor(prices.length*.75)]||0;
+    function pinColor(p){
+      if(p<=q1)return'#1F7A4D';
+      if(p<=q2)return'#5A9E2F';
+      if(p<=q3)return'#C77F1F';
+      return'#8A1F1F';
+    }
+    const map=L.map('comp-map').setView([lat,lng],14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    COMPS.forEach(c=>{
+      const ll=geo[c.postcode];
+      if(!ll)return;
+      const color=pinColor(c.price);
+      const m=L.circleMarker(ll,{radius:9,fillColor:color,color:'#fff',weight:1.5,opacity:1,fillOpacity:.85});
+      const price=c.price?'£'+c.price.toLocaleString():'—';
+      const date=c.sold_date?c.sold_date.slice(0,10):'—';
+      m.bindPopup(`<strong style="font-family:monospace">${price}</strong><br>${c.address||'—'}<br><span style="color:#5A6772;font-size:12px">${c.prop_type||'—'} &middot; ${date}</span>`);
+      m.addTo(map);
+    });
+    /* legend */
+    const legend=L.control({position:'bottomright'});
+    legend.onAdd=()=>{
+      const d=L.DomUtil.create('div');
+      d.style.cssText='background:#fff;padding:8px 10px;font-family:monospace;font-size:11px;line-height:1.8;border:1px solid #ccc';
+      d.innerHTML='<strong>Price quartiles</strong><br>'
+        +'<span style="color:#1F7A4D">&#9679;</span> Cheapest 25%<br>'
+        +'<span style="color:#5A9E2F">&#9679;</span> Q2<br>'
+        +'<span style="color:#C77F1F">&#9679;</span> Q3<br>'
+        +'<span style="color:#8A1F1F">&#9679;</span> Most expensive 25%';
+      return d;
+    };
+    legend.addTo(map);
+  })();
+  </script>
+  {% endif %}
 
   <div class="add-form">
     <h3>Add this property to the deal ledger</h3>

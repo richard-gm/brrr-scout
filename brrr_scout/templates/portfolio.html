@@ -53,7 +53,9 @@ input:focus-visible,button:focus-visible,select:focus-visible{outline:3px solid 
   <div class="sub">6-month refinance countdowns · cash recycled · the repeat in BRRR</div>
   <nav>
     <a class="btn" href="{{ url_for('index') }}">Deal ledger</a>
+    <a class="btn" href="{{ url_for('lookup') }}">Postcode lookup</a>
     <a class="btn" href="{{ url_for('auctions') }}">Auction tracker</a>
+    <a class="btn" href="{{ url_for('settings') }}">Settings</a>
   </nav>
 </header>
 {% with msgs = get_flashed_messages() %}{% for m in msgs %}<div class="flash">{{ m }}</div>{% endfor %}{% endwith %}

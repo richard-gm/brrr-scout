@@ -77,6 +77,8 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 40px;font-size:12px;colo
 .owner-box{grid-column:1/-1;background:#F5F0FF;border:1px solid #C8B8F0;padding:7px 12px;font-size:12px;font-family:var(--mono)}
 .owner-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6A5A88;margin-right:8px;font-weight:600}
 .owner-flag{display:inline-block;background:#EEE8FF;border:1px solid #9878C8;color:#5A3A8A;font-size:10px;padding:1px 6px;margin:0 4px}
+.comps-toggle{color:var(--brick);text-decoration:underline dotted;cursor:pointer}
+.comps-toggle:hover{color:var(--ink)}
 </style>
 </head>
 <body>
@@ -87,6 +89,7 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 40px;font-size:12px;colo
     <a class="btn" href="{{ url_for('lookup') }}">Postcode lookup</a>
     <a class="btn" href="{{ url_for('auctions') }}">Auction tracker</a>
     <a class="btn" href="{{ url_for('portfolio') }}">Portfolio</a>
+    <a class="btn" href="{{ url_for('settings') }}">Settings</a>
     <a class="btn" href="{{ url_for('scan_live') }}">Run live scan</a>
     <a class="btn" href="{{ url_for('scan_inbox') }}">Import inbox</a>
   </nav>
@@ -142,7 +145,7 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 40px;font-size:12px;colo
     </div>
     <div class="num"><b>{{ d.price|gbp }}</b><span>Asking</span>
       {% if d.price_drop and d.price_drop>0 %}<span class="drop">▼ {{ d.price_drop|gbp }} since first seen</span>{% endif %}</div>
-    <div class="num"><b>{{ d.comp_median|gbp }}</b><span>Comp value ({{ d.comp_count or 0 }} · {{ d.comp_basis or 'outcode' }})</span>
+    <div class="num"><b>{{ d.comp_median|gbp }}</b><span>Comp value (<a href="#" class="comps-toggle" data-oc="{{ d.outcode }}" data-idx="{{ loop.index }}" onclick="return toggleComps(this)">{{ d.comp_count or 0 }} · {{ d.comp_basis or 'outcode' }}</a>)</span>
       {% if d.comp_confidence %}<span class="conf conf-{{ d.comp_confidence|lower }}">{{ d.comp_confidence }} confidence</span>{% endif %}</div>
     <div class="num"><b>{{ d.end_value|gbp }}</b><span>End value used</span></div>
     <div class="num"><b>{{ d.roi is not none and '%.1f%%'|format(d.roi*100) or '—' }}</b><span>ROI on cash left</span></div>
@@ -200,10 +203,11 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 40px;font-size:12px;colo
       {% if d.tenure %}<span class="tag">{{ d.tenure }}</span>{% endif %}
       {% if d.n_prices and d.n_prices>1 %}<span class="tag">{{ d.n_prices }} price points tracked</span>{% endif %}
     </div>
+    <div class="comps-panel" id="cp{{ loop.index }}" style="display:none;grid-column:1/-1;border-top:1px solid var(--line);padding-top:10px"></div>
   </article>
   {% endfor %}
 
-  <details class="addform" id="addform">
+  <details class="addform" id="addform" open>
     <summary>+ Add a listing (paste Rightmove/Zoopla URL, or fill manually)</summary>
     <div style="padding:0 18px 14px">
       <div style="background:#EEF3FF;border:1px solid #B0C0E8;padding:12px 14px;margin-bottom:14px">
@@ -254,6 +258,39 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 40px;font-size:12px;colo
       st.textContent='⚠ Request failed — fill the form manually';
       st.style.color='#8A1F1F';
     }
+  }
+  const _compsCache={};
+  async function toggleComps(el){
+    const oc=el.dataset.oc,idx=el.dataset.idx;
+    const panel=document.getElementById('cp'+idx);
+    if(panel.style.display!=='none'){panel.style.display='none';return false;}
+    panel.style.display='block';
+    if(_compsCache[oc]){renderComps(panel,_compsCache[oc]);return false;}
+    panel.innerHTML='<span style="font-family:var(--mono);font-size:12px;color:#5A6772">Loading comps…</span>';
+    try{
+      const r=await fetch('/api/comps/'+oc);
+      const data=await r.json();
+      _compsCache[oc]=data;
+      renderComps(panel,data);
+    }catch(e){
+      panel.innerHTML='<span style="color:#8A1F1F;font-family:var(--mono);font-size:12px">Failed to load comps</span>';
+    }
+    return false;
+  }
+  function renderComps(panel,comps){
+    if(!comps.length){panel.innerHTML='<span style="font-family:var(--mono);font-size:12px;color:#5A6772">No comps stored yet — run a scan or add a listing to populate.</span>';return;}
+    const th='padding:4px 8px;font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:#5A6772;text-align:left;border-bottom:1px solid var(--line)';
+    const td='padding:3px 8px;font-family:var(--mono);font-size:12px;border-bottom:1px solid #F0F1F2';
+    let html=`<table style="width:100%;border-collapse:collapse"><thead><tr>
+      <th style="${th}">Date</th><th style="${th}">Address</th><th style="${th}">Type</th><th style="${th};text-align:right">Price</th>
+    </tr></thead><tbody>`;
+    comps.forEach(c=>{
+      const date=c.sold_date?c.sold_date.slice(0,10):'—';
+      const price=c.price?'£'+c.price.toLocaleString():'—';
+      html+=`<tr><td style="${td}">${date}</td><td style="${td}">${c.address||'—'}</td><td style="${td}">${c.prop_type||'—'}</td><td style="${td};text-align:right">${price}</td></tr>`;
+    });
+    html+='</tbody></table>';
+    panel.innerHTML=html;
   }
   </script>
 </main>

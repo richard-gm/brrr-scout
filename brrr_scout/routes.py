@@ -394,3 +394,45 @@ def init_app(app):
     def portfolio_delete(pid):
         c = db.conn(); db.portfolio_delete(c, pid); c.close()
         return redirect(url_for("portfolio"))
+
+    # ---- Settings -----------------------------------------------------------
+
+    @app.route("/settings", methods=["GET", "POST"])
+    def settings():
+        c = db.conn()
+        if request.method == "POST":
+            for key in request.form:
+                vals = request.form.getlist(key)
+                db.set_setting(c, key, ",".join(vals))
+            flash("Settings saved.")
+            c.close()
+            return redirect(url_for("settings"))
+        s = db.get_settings(c)
+        searches = config.SEARCHES
+        if "searches_json" in s:
+            try:
+                searches = json.loads(s["searches_json"])
+            except (json.JSONDecodeError, TypeError):
+                searches = config.SEARCHES
+        c.close()
+        return render_template("settings.html", s=s, searches=searches)
+
+    @app.route("/settings/delete")
+    def settings_delete():
+        c = db.conn()
+        db.delete_settings(c)
+        c.close()
+        flash("Settings reset to defaults.")
+        return redirect(url_for("settings"))
+
+    # ---- Comps API ----------------------------------------------------------
+
+    @app.route("/api/comps/<outcode>")
+    def api_comps(outcode):
+        c = db.conn()
+        rows = c.execute(
+            "SELECT address, postcode, price, sold_date, prop_type FROM sold_comps WHERE outcode=? ORDER BY sold_date DESC LIMIT 50",
+            (outcode.upper(),)
+        ).fetchall()
+        c.close()
+        return jsonify([dict(r) for r in rows])

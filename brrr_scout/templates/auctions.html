@@ -50,7 +50,7 @@ input:focus-visible,button:focus-visible{outline:3px solid #E07B5F;outline-offse
 <header>
   <h1>Auction<span>/</span>Tracker</h1>
   <div class="sub">guide vs locked max bid · legal pack red flags · bid-day checklist</div>
-  <nav><a class="btn" href="{{ url_for('index') }}">← Deal ledger</a> <a class="btn" href="{{ url_for('portfolio') }}">Portfolio</a></nav>
+  <nav><a class="btn" href="{{ url_for('index') }}">← Deal ledger</a> <a class="btn" href="{{ url_for('lookup') }}">Postcode lookup</a> <a class="btn" href="{{ url_for('portfolio') }}">Portfolio</a> <a class="btn" href="{{ url_for('settings') }}">Settings</a></nav>
 </header>
 {% with msgs = get_flashed_messages() %}{% for m in msgs %}<div class="flash">{{ m }}</div>{% endfor %}{% endwith %}
 <main>

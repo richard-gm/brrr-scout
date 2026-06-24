@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BRRR Scout — settings</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,700;125,800&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#18242E;--mortar:#E9ECEE;--card:#fff;--brick:#A8402C;--pass:#1F7A4D;--thin:#C77F1F;--walk:#8A1F1F;
+--line:#C8CED3;--mono:'IBM Plex Mono',monospace;--disp:'Archivo',sans-serif;--body:'Inter',system-ui,sans-serif}
+*{box-sizing:border-box} body{margin:0;background:var(--mortar);color:var(--ink);font-family:var(--body);font-size:15px}
+header{background:var(--ink);color:#fff;padding:18px 28px;display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
+header h1{font-family:var(--disp);font-stretch:125%;font-weight:800;font-size:22px;letter-spacing:.04em;margin:0;text-transform:uppercase}
+header h1 span{color:#E07B5F} header .sub{font-family:var(--mono);font-size:12px;opacity:.7}
+header nav{margin-left:auto;display:flex;gap:10px}
+.btn{font-family:var(--mono);font-size:13px;text-decoration:none;color:var(--ink);background:#fff;border:1px solid var(--ink);padding:7px 14px;cursor:pointer;display:inline-block}
+.btn:hover{background:#E07B5F;color:#fff;border-color:#E07B5F}
+.btn.danger{color:var(--walk);border-color:var(--walk)} .btn.danger:hover{background:var(--walk);color:#fff}
+.flash{background:#FFF6D9;border-bottom:1px solid #E0CE8A;padding:10px 28px;font-family:var(--mono);font-size:12.5px}
+main{max-width:900px;margin:26px auto;padding:0 20px}
+.card{background:var(--card);border:1px solid var(--line);padding:20px 24px;margin-bottom:20px}
+.card h2{font-family:var(--disp);font-stretch:125%;font-size:15px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 16px}
+label{display:block;font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;color:#5A6772}
+input,textarea,select{padding:9px;border:1px solid var(--line);font-family:var(--mono);font-size:13px;width:100%;margin-bottom:14px;background:#fff}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.form-row-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px}
+textarea{font-family:var(--mono);font-size:12px;line-height:1.5;min-height:200px;resize:vertical}
+.help{font-family:var(--mono);font-size:11px;color:#5A6772;margin:-10px 0 14px;line-height:1.5}
+.help-sm{font-family:var(--mono);font-size:10px;color:#5A6772;margin:-8px 0 10px;line-height:1.4}
+.footer-actions{display:flex;gap:10px;align-items:center;margin-top:10px}
+details.card summary{cursor:pointer;font-family:var(--mono);font-size:13px;padding:4px 0}
+details.card[open]{padding-bottom:8px}
+details.card .inner{padding-top:12px}
+@media(max-width:700px){.form-row,.form-row-3,.form-row-4{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>BRRR<span>/</span>Scout</h1>
+  <div class="sub">settings</div>
+  <nav>
+    <a class="btn" href="{{ url_for('index') }}">← Deal ledger</a>
+    <a class="btn" href="{{ url_for('lookup') }}">Postcode lookup</a>
+    <a class="btn" href="{{ url_for('auctions') }}">Auction tracker</a>
+    <a class="btn" href="{{ url_for('portfolio') }}">Portfolio</a>
+  </nav>
+</header>
+{% with msgs = get_flashed_messages() %}{% for m in msgs %}<div class="flash">{{ m }}</div>{% endfor %}{% endwith %}
+<main>
+  <form method="post">
+
+  <div class="card">
+    <h2>Price range & refurb</h2>
+    <div class="form-row">
+      <div><label>Min price (£)</label><input name="min_price" type="number" value="{{ s.min_price or '20000' }}"></div>
+      <div><label>Max price (£)</label><input name="max_price" type="number" value="{{ s.max_price or '70000' }}"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Standard refurb (£)</label><input name="refurb_default" type="number" value="{{ s.refurb_default or '20000' }}"></div>
+      <div><label>Heavy refurb (£)</label><input name="refurb_heavy" type="number" value="{{ s.refurb_heavy or '30000' }}"></div>
+    </div>
+    <div class="help-sm">Heavy applied to auction properties under the auction heavy threshold below.</div>
+  </div>
+
+  <div class="card">
+    <h2>Financial assumptions</h2>
+    <p style="margin:-8px 0 14px;font-family:var(--mono);font-size:11px;color:#5A6772">Enter percentages as whole numbers (e.g. 5.25 for 5.25%, 75 for 75%)</p>
+    <div class="form-row-4">
+      <div><label>Rate (%)</label><input name="rate" type="number" step="0.01" value="{{ s.rate or '5.25' }}"></div>
+      <div><label>Refi LTV (%)</label><input name="ltv" type="number" step="0.5" value="{{ s.ltv or '75' }}"></div>
+      <div><label>SDLT (%)</label><input name="sdlt" type="number" step="0.1" value="{{ s.sdlt or '5' }}"></div>
+      <div><label>Fees (£)</label><input name="fees" type="number" value="{{ s.fees or '2500' }}"></div>
+    </div>
+    <div class="form-row-4">
+      <div><label>Mgmt (%)</label><input name="mgmt" type="number" step="0.5" value="{{ s.mgmt or '10' }}"></div>
+      <div><label>Maint (%)</label><input name="maint" type="number" step="0.5" value="{{ s.maint or '8' }}"></div>
+      <div><label>Voids (%)</label><input name="voids" type="number" step="0.5" value="{{ s.voids or '4' }}"></div>
+      <div><label>Insurance (£/yr)</label><input name="insurance" type="number" value="{{ s.insurance or '350' }}"></div>
+    </div>
+    <div class="form-row-3">
+      <div><label>Stress rate (%)</label><input name="stress_rate" type="number" step="0.1" value="{{ s.stress_rate or '7' }}"></div>
+      <div><label>Stress cover (×)</label><input name="stress_cover" type="number" step="0.05" value="{{ s.stress_cover or '1.25' }}"></div>
+      <div><label>Gross yield (%)</label><input name="gross_yield_heuristic" type="number" step="0.01" value="{{ s.gross_yield_heuristic or '1.15' }}"></div>
+    </div>
+    <div class="help-sm">These 10 values drive every deal valuation, max-bid calculation, and portfolio projection.</div>
+  </div>
+
+  <div class="card">
+    <h2>Deal strategy</h2>
+    <div class="form-row-4">
+      <div><label>End-value cap (comps)</label><input name="end_value_cap_comps" type="number" step="0.01" value="{{ s.end_value_cap_comps or '1.45' }}"><span class="help-sm">× asking when comps exist</span></div>
+      <div><label>End-value cap (no comps)</label><input name="end_value_cap_no_comps" type="number" step="0.01" value="{{ s.end_value_cap_no_comps or '1.30' }}"><span class="help-sm">× asking when no comps</span></div>
+      <div><label>Auction heavy threshold</label><input name="auction_heavy_threshold" type="number" value="{{ s.auction_heavy_threshold or '45000' }}"><span class="help-sm">Auctions below this get heavy refurb</span></div>
+      <div><label>Target ROI (%)</label><input name="target_roi_default" type="number" step="0.5" value="{{ s.target_roi_default or '12' }}"><span class="help-sm">Default for max-bid calc</span></div>
+    </div>
+    <div class="form-row-4">
+      <div><label>Full recycle ratio (%)</label><input name="verdict_full_recycle_ratio" type="number" step="1" value="{{ s.verdict_full_recycle_ratio or '80' }}"><span class="help-sm">total_in ≤ this % of end_value</span></div>
+      <div><label>Full recycle bid ratio (%)</label><input name="full_recycle_bid_ratio" type="number" step="1" value="{{ s.full_recycle_bid_ratio or '80' }}"><span class="help-sm">bid = this % × end_value - costs</span></div>
+      <div><label>Seasoning days</label><input name="seasoning_days" type="number" value="{{ s.seasoning_days or '183' }}"><span class="help-sm">Refi eligibility window</span></div>
+    </div>
+    <div class="form-row-4">
+      <div><label>GOOD DEAL ≥ (%)</label><input name="verdict_good_deal_roi" type="number" step="0.5" value="{{ s.verdict_good_deal_roi or '12' }}"></div>
+      <div><label>ON TARGET ≥ (%)</label><input name="verdict_on_target_roi" type="number" step="0.5" value="{{ s.verdict_on_target_roi or '7' }}"></div>
+      <div><label>THIN ≥ (%)</label><input name="verdict_thin_roi" type="number" step="0.5" value="{{ s.verdict_thin_roi or '4' }}"></div>
+    </div>
+  </div>
+
+  <details class="card">
+    <summary>+ Comparable settings (Land Registry)</summary>
+    <div class="inner">
+      <div class="form-row-3">
+        <div><label>Comp since date</label><input name="comp_since" type="text" value="{{ s.comp_since or '2024-01-01' }}"><span class="help-sm">Only sales after this date</span></div>
+        <div><label>Comp price cap (£)</label><input name="comp_price_cap" type="number" value="{{ s.comp_price_cap or '200000' }}"><span class="help-sm">Exclude sales above this</span></div>
+        <div><label>Max LR pages</label><input name="comp_max_pages" type="number" value="{{ s.comp_max_pages or '3' }}"><span class="help-sm">Pages of LR data to fetch</span></div>
+      </div>
+      <div>
+        <label>Recency weights (JSON)</label>
+        <textarea name="recency_weights" style="min-height:80px" spellcheck="false">{% if s.recency_weights %}{{ s.recency_weights }}{% else %}{"2026":3.0,"2025":2.0,"2024":1.0,"default":0.5}{% endif %}</textarea>
+        <span class="help-sm">Year → weight for weighted-median comp scoring. Key "default" is fallback.</span>
+      </div>
+    </div>
+  </details>
+
+  <details class="card">
+    <summary>+ Scraping settings</summary>
+    <div class="inner">
+      <div class="form-row-4">
+        <div><label>Rate limit (s)</label><input name="rate_seconds" type="number" step="0.5" value="{{ s.rate_seconds or '6' }}"></div>
+        <div><label>Crawl timeout (ms)</label><input name="crawl_timeout" type="number" value="{{ s.crawl_timeout or '60000' }}"></div>
+        <div><label>Crawl4AI delay (s)</label><input name="crawl4ai_delay" type="number" step="0.1" value="{{ s.crawl4ai_delay or '3.5' }}"><span class="help-sm">Wait before reading HTML</span></div>
+        <div><label>Min HTML length</label><input name="crawl_min_html" type="number" value="{{ s.crawl_min_html or '5000' }}"><span class="help-sm">Page must exceed this</span></div>
+      </div>
+      <div class="form-row-4">
+        <div><label>Requests timeout (s)</label><input name="requests_timeout" type="number" value="{{ s.requests_timeout or '25' }}"></div>
+        <div><label>RM property types</label><input name="rightmove_property_types" type="text" value="{{ s.rightmove_property_types or 'flat,terraced' }}"><span class="help-sm">Comma-separated: flat,terraced,semi-detached...</span></div>
+        <div><label>RM include SSTC</label><select name="rightmove_include_sstc"><option value="true" {{ 'selected' if s.rightmove_include_sstc == 'true' }}>Yes</option><option value="false" {{ 'selected' if s.rightmove_include_sstc != 'true' }}>No</option></select></div>
+        <div><label>RM sort</label><select name="rightmove_sort"><option value="newest" {{ 'selected' if s.rightmove_sort == 'newest' }}>Newest</option><option value="lowest_price" {{ 'selected' if s.rightmove_sort == 'lowest_price' }}>Lowest price</option><option value="highest_price" {{ 'selected' if s.rightmove_sort == 'highest_price' }}>Highest price</option></select></div>
+      </div>
+      <div class="form-row-4">
+        <div><label>Tenure types</label>
+          <select name="rightmove_tenure_types" multiple size="3">
+            <option value="freehold" {{ 'selected' if 'freehold' in (s.rightmove_tenure_types or '') }}>Freehold</option>
+            <option value="leasehold" {{ 'selected' if 'leasehold' in (s.rightmove_tenure_types or '') }}>Leasehold</option>
+            <option value="shareOfFreehold" {{ 'selected' if 'shareOfFreehold' in (s.rightmove_tenure_types or '') }}>Share of Freehold</option>
+          </select>
+          <span class="help-sm">Cmd+click to select multiple</span>
+        </div>
+        <div><label>Don't show</label>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+            <label style="font-family:var(--mono);font-size:11px;display:flex;align-items:center;gap:4px;text-transform:none;letter-spacing:0;color:var(--ink)"><input type="checkbox" name="rightmove_dont_show" value="new_home" {{ 'checked' if 'new_home' in (s.rightmove_dont_show or '') }}> New home</label>
+            <label style="font-family:var(--mono);font-size:11px;display:flex;align-items:center;gap:4px;text-transform:none;letter-spacing:0;color:var(--ink)"><input type="checkbox" name="rightmove_dont_show" value="retirement" {{ 'checked' if 'retirement' in (s.rightmove_dont_show or '') }}> Retirement</label>
+            <label style="font-family:var(--mono);font-size:11px;display:flex;align-items:center;gap:4px;text-transform:none;letter-spacing:0;color:var(--ink)"><input type="checkbox" name="rightmove_dont_show" value="shared_ownership" {{ 'checked' if 'shared_ownership' in (s.rightmove_dont_show or '') }}> Shared ownership / Buying schemes</label>
+            <label style="font-family:var(--mono);font-size:11px;display:flex;align-items:center;gap:4px;text-transform:none;letter-spacing:0;color:var(--ink)"><input type="checkbox" name="rightmove_dont_show" value="auction" {{ 'checked' if 'auction' in (s.rightmove_dont_show or '') }}> Auction property</label>
+          </div>
+          <span class="help-sm">Check any property types to exclude from search results</span>
+        </div>
+      </div>
+      <div class="form-row-3">
+        <div><label>Zoopla sort</label><select name="zoopla_sort"><option value="lowest_price" {{ 'selected' if s.zoopla_sort == 'lowest_price' }}>Lowest price</option><option value="newest" {{ 'selected' if s.zoopla_sort == 'newest' }}>Newest</option><option value="highest_price" {{ 'selected' if s.zoopla_sort == 'highest_price' }}>Highest price</option></select></div>
+      </div>
+    </div>
+  </details>
+
+  <details class="card">
+    <summary>+ Claude AI</summary>
+    <div class="inner">
+      <div class="form-row-3">
+        <div><label>Model</label><input name="claude_model" type="text" value="{{ s.claude_model or 'claude-sonnet-4-20250514' }}"></div>
+        <div><label>Floorplan max tokens</label><input name="claude_floorplan_tokens" type="number" value="{{ s.claude_floorplan_tokens or '600' }}"></div>
+        <div><label>Pack max tokens</label><input name="claude_pack_tokens" type="number" value="{{ s.claude_pack_tokens or '1200' }}"></div>
+      </div>
+    </div>
+  </details>
+
+  <div class="card">
+    <h2>Search areas</h2>
+    <label for="searches_json">JSON</label>
+    <textarea id="searches_json" name="searches_json" spellcheck="false">{% if searches %}{{ searches|tojson(indent=2) }}{% endif %}</textarea>
+    <div class="help-sm">
+      Rightmove: {"portal":"rightmove","label":"Name","location_id":"OUTCODE^1234"}<br>
+      Zoopla: {"portal":"zoopla","label":"Name","area_slug":"area-slug"}
+    </div>
+  </div>
+
+  <div class="footer-actions">
+    <button class="btn" type="submit">Save settings</button>
+    <a class="btn danger" href="{{ url_for('settings_delete') }}" onclick="return confirm('Reset all settings to defaults?')">Reset to defaults</a>
+  </div>
+  </form>
+</main>
+</body>
+</html>

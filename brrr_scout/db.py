@@ -300,6 +300,38 @@ def conn():
     _migrate_v5(c)
     return c
 
+# ---- v6: settings key-value store ----
+MIGRATION_V6 = """
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT
+);
+"""
+
+def _migrate_v6(c):
+    log.debug("Running migration v6")
+    c.executescript(MIGRATION_V6)
+    c.commit()
+
+_conn_v5 = conn
+def conn():
+    c = _conn_v5()
+    _migrate_v6(c)
+    return c
+
+def get_settings(c):
+    rows = c.execute("SELECT key, value FROM settings").fetchall()
+    return {r["key"]: r["value"] for r in rows}
+
+def set_setting(c, key, value):
+    c.execute("INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+              (key, value))
+    c.commit()
+
+def delete_settings(c):
+    c.execute("DELETE FROM settings")
+    c.commit()
+
 def save_rental_comps(c, outcode, comps):
     c.execute("DELETE FROM rental_comps WHERE outcode=?", (outcode,))
     now = time.time()
