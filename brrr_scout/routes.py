@@ -2,7 +2,7 @@
 import json, logging, os, pathlib, datetime as _dt
 from flask import render_template, redirect, url_for, request, flash, jsonify
 from werkzeug.utils import secure_filename
-from . import db, config, scrapers, analyzer
+from . import db, config, scrapers, analyzer, signals as _signals, calcs as _calcs
 
 log = logging.getLogger("brrr_scout.routes")
 _DATA = pathlib.Path(__file__).parent.parent / "data"
@@ -91,6 +91,7 @@ def init_app(app):
             raw_owner = r["owner_json"] if d.get("owner_json") else None
             d["owner"] = json.loads(raw_owner) if raw_owner and raw_owner not in ("{}", "null") else None
             d["history"] = hist.get(r["pid"], [])
+            d["signals"] = _signals.compute_signals(d)
             parsed.append(d)
         return render_template("index.html", deals=parsed, cfg=config)
 
@@ -109,6 +110,10 @@ def init_app(app):
         for r in rows:
             d = dict(r)
             d["conversion"] = json.loads(r["conversion_json"]) if r["conversion_json"] else None
+            d["ai"] = json.loads(r["ai_json"]) if d.get("ai_json") and r["ai_json"] not in ("{}", "null") else None
+            raw_owner = r["owner_json"] if d.get("owner_json") else None
+            d["owner"] = json.loads(raw_owner) if raw_owner and raw_owner not in ("{}", "null") else None
+            d["signals"] = _signals.compute_signals(d)
             parsed.append(d)
         return render_template("index.html", deals=parsed, cfg=config, maxbid=res)
 
@@ -436,3 +441,64 @@ def init_app(app):
         ).fetchall()
         c.close()
         return jsonify([dict(r) for r in rows])
+
+    # ---- Calculators --------------------------------------------------------
+
+    @app.route("/calculators", methods=["GET"])
+    def calculators():
+        sdlt_result = flip_result = hmo_result = None
+        active = request.args.get("calc")
+
+        if active == "sdlt" and request.args.get("price"):
+            try:
+                price = int(request.args["price"])
+                brackets = [
+                    ("£0 – £125,000 @ 3%",    min(price, 125_000) * 0.03),
+                    ("£125k – £250k @ 5%",    max(0, min(price, 250_000) - 125_000) * 0.05),
+                    ("£250k – £925k @ 8%",    max(0, min(price, 925_000) - 250_000) * 0.08),
+                    ("£925k – £1.5m @ 13%",   max(0, min(price, 1_500_000) - 925_000) * 0.13),
+                    ("Over £1.5m @ 15%",       max(0, price - 1_500_000) * 0.15),
+                ]
+                brackets = [(b, int(v)) for b, v in brackets if v > 0]
+                sdlt_result = {
+                    "price": price,
+                    "total": analyzer.calc_sdlt(price),
+                    "brackets": brackets,
+                    "effective_pct": round(analyzer.calc_sdlt(price) / price * 100, 2) if price else 0,
+                }
+            except (ValueError, ZeroDivisionError):
+                pass
+
+        if active == "flip" and request.args.get("buy_price"):
+            try:
+                flip_result = _calcs.calc_flip(
+                    buy_price=int(request.args["buy_price"]),
+                    refurb=int(request.args.get("refurb") or 20_000),
+                    target_profit=int(request.args.get("target_profit") or 15_000),
+                    agent_pct=float(request.args.get("agent_pct") or 1.5) / 100,
+                )
+            except (ValueError, ZeroDivisionError):
+                pass
+
+        if active == "hmo" and request.args.get("buy_price"):
+            try:
+                hmo_result = _calcs.calc_hmo(
+                    buy_price=int(request.args["buy_price"]),
+                    rooms=int(request.args.get("rooms") or 4),
+                    rent_per_room=int(request.args.get("rent_per_room") or 450),
+                    refurb=int(request.args.get("refurb") or 25_000),
+                    rate=float(request.args.get("rate") or 5.25) / 100,
+                    ltv=float(request.args.get("ltv") or 75) / 100,
+                    bills_per_room=int(request.args.get("bills_per_room") or 0),
+                )
+            except (ValueError, ZeroDivisionError):
+                pass
+
+        return render_template(
+            "calculators.html",
+            active=active,
+            sdlt=sdlt_result,
+            flip=flip_result,
+            hmo=hmo_result,
+            args=request.args,
+        )

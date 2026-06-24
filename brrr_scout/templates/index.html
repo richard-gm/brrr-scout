@@ -7,8 +7,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,700;125,800&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#18242E; --mortar:#E9ECEE; --card:#FFFFFF; --brick:#A8402C;
-  --pass:#1F7A4D; --thin:#C77F1F; --walk:#8A1F1F; --line:#C8CED3;
+  --ink:#0B1F3A; --mortar:#FAF6EC; --card:#FFFFFF; --brick:#A8402C;
+  --pass:#0E6B4E; --thin:#C39A3C; --walk:#A7343A; --line:#DDD8CC;
+  --navy:#0B1F3A; --indigo:#3B2FB3;
   --mono:'IBM Plex Mono',monospace; --disp:'Archivo',sans-serif; --body:'Inter',system-ui,sans-serif;
 }
 *{box-sizing:border-box} body{margin:0;background:var(--mortar);color:var(--ink);font-family:var(--body);font-size:15px}
@@ -66,7 +67,15 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 40px;font-size:12px;colo
 .conf-high{color:var(--pass);border-color:var(--pass)} .conf-medium{color:var(--thin);border-color:var(--thin)}
 .conf-low,.conf-none{color:var(--walk);border-color:var(--walk)}
 .epc{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;padding:1px 6px;color:#fff;border-radius:2px}
-.epc-a,.epc-b{background:#1F7A4D}.epc-c{background:#5A9E2F}.epc-d{background:#C77F1F}.epc-e{background:#C7601F}.epc-f,.epc-g{background:#8A1F1F}
+.epc-a,.epc-b{background:#0E6B4E}.epc-c{background:#5A9E2F}.epc-d{background:#C39A3C}.epc-e{background:#C7601F}.epc-f,.epc-g{background:#A7343A}
+.sig{font-family:var(--mono);font-size:10.5px;font-weight:600;border:1.5px solid;padding:2px 7px;border-radius:2px;white-space:nowrap}
+.sig-reduced{color:#A7343A;border-color:#A7343A;background:#FFF5F5}
+.sig-history{color:#3B2FB3;border-color:#3B2FB3;background:#F5F4FF}
+.sig-stale{color:#5A6772;border-color:#5A6772;background:#F6F7F8}
+.sig-brrr{color:#0E6B4E;border-color:#0E6B4E;background:#F0F9F5}
+.sig-yield{color:#C39A3C;border-color:#C39A3C;background:#FFFBF0}
+.sig-auction{color:#A8402C;border-color:#A8402C;background:#FFF8F5}
+.sig-leasehold{color:#0B1F3A;border-color:#0B1F3A;background:#F0F2F5}
 .ai-box{background:#F0F6FF;border:1px solid #B8D0F0;padding:10px 12px;margin-top:8px;font-size:13px;grid-column:1/-1}
 .ai-box .ai-verdict{font-family:var(--mono);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
 .ai-box .ai-verdict.buy{color:var(--pass)}.ai-box .ai-verdict.watch{color:var(--thin)}.ai-box .ai-verdict.pass{color:var(--walk)}
@@ -89,6 +98,7 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 40px;font-size:12px;colo
     <a class="btn" href="{{ url_for('lookup') }}">Postcode lookup</a>
     <a class="btn" href="{{ url_for('auctions') }}">Auction tracker</a>
     <a class="btn" href="{{ url_for('portfolio') }}">Portfolio</a>
+    <a class="btn" href="{{ url_for('calculators') }}">Calculators</a>
     <a class="btn" href="{{ url_for('settings') }}">Settings</a>
     <a class="btn" href="{{ url_for('scan_live') }}">Run live scan</a>
     <a class="btn" href="{{ url_for('scan_inbox') }}">Import inbox</a>
@@ -192,6 +202,9 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 40px;font-size:12px;colo
     {% endif %}
 
     <div class="tags">
+      {% for sig in (d.signals or []) %}
+        <span class="sig {{ sig.cls }}" {% if sig.detail %}title="{{ sig.detail }}"{% endif %}>{{ sig.label }}</span>
+      {% endfor %}
       {% if d.conversion %}
         {% set cv = d.conversion.convertible %}
         <span class="tag conv-{{ 'yes' if cv==true else ('no' if cv==false else 'maybe') }}">
@@ -253,10 +266,10 @@ footer{max-width:1180px;margin:30px auto;padding:0 20px 40px;font-size:12px;colo
       set('f-floorplan_url',d.floorplan_url);
       if(d.is_auction)document.getElementById('f-is_auction').checked=true;
       st.textContent='✓ Form filled — review then click Analyse deal';
-      st.style.color='#1F7A4D';
+      st.style.color='#0E6B4E';
     }catch(e){
       st.textContent='⚠ Request failed — fill the form manually';
-      st.style.color='#8A1F1F';
+      st.style.color='#A7343A';
     }
   }
   const _compsCache={};

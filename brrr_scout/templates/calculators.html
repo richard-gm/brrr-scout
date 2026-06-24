@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BRRR Scout — Calculators</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,700;125,800&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0B1F3A; --mortar:#FAF6EC; --card:#fff; --brick:#A8402C;
+  --pass:#0E6B4E; --thin:#C39A3C; --walk:#A7343A; --line:#DDD8CC;
+  --navy:#0B1F3A; --indigo:#3B2FB3;
+  --mono:'IBM Plex Mono',monospace; --disp:'Archivo',sans-serif; --body:'Inter',system-ui,sans-serif;
+}
+*{box-sizing:border-box} body{margin:0;background:var(--mortar);color:var(--ink);font-family:var(--body);font-size:15px}
+header{background:var(--ink);color:#fff;padding:18px 28px;display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
+header h1{font-family:var(--disp);font-stretch:125%;font-weight:800;font-size:22px;letter-spacing:.04em;margin:0;text-transform:uppercase}
+header h1 span{color:#E07B5F}
+header .sub{font-family:var(--mono);font-size:12px;opacity:.7}
+header nav{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap}
+.btn{font-family:var(--mono);font-size:13px;text-decoration:none;color:var(--ink);background:#fff;border:1px solid var(--ink);padding:7px 14px;cursor:pointer;display:inline-block}
+.btn:hover{background:#E07B5F;color:#fff;border-color:#E07B5F}
+.btn.active{background:var(--ink);color:#fff}
+.flash{background:#FFF6D9;border-bottom:1px solid #E0CE8A;padding:10px 28px;font-family:var(--mono);font-size:12.5px}
+main{max-width:900px;margin:26px auto;padding:0 20px}
+h2{font-family:var(--disp);font-stretch:125%;font-weight:800;font-size:16px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);padding:22px 24px;margin-bottom:20px}
+.card h2{margin:0 0 4px}
+.card .sub{font-family:var(--mono);font-size:11.5px;color:#5A6772;margin-bottom:16px}
+label{display:block;font-family:var(--mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;color:#5A6772}
+input,select{padding:9px 11px;border:1px solid var(--line);font-family:var(--mono);font-size:13px;width:100%;margin-bottom:14px;background:#fff;color:var(--ink)}
+input:focus,select:focus{outline:2px solid var(--indigo);outline-offset:1px;border-color:var(--indigo)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.row-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px}
+@media(max-width:600px){.row,.row-3,.row-4{grid-template-columns:1fr}}
+.results{background:#F0F6F0;border:1px solid #B8D8C8;padding:18px 20px;margin-top:16px}
+.results.flip{background:#FFF8F0;border-color:#E8D0A8}
+.results.hmo{background:#F0F0FF;border-color:#C0B8F0}
+.bignum{font-family:var(--mono);font-size:28px;font-weight:600}
+.bignum.green{color:var(--pass)} .bignum.amber{color:var(--thin)} .bignum.red{color:var(--walk)} .bignum.indigo{color:var(--indigo)}
+.metric{display:inline-block;margin-right:32px;margin-bottom:12px;vertical-align:top}
+.metric .lbl{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#5A6772;display:block;margin-bottom:2px}
+.sdlt-table{width:100%;border-collapse:collapse;font-size:13px;font-family:var(--mono);margin-top:12px}
+.sdlt-table td{padding:5px 8px;border-bottom:1px solid #E8E4DC}
+.sdlt-table tr:last-child td{border-bottom:none}
+.sdlt-table td:last-child{text-align:right}
+.sdlt-total{font-weight:600;border-top:2px solid var(--ink)!important}
+.tab-row{display:flex;gap:0;margin-bottom:20px;border:1px solid var(--line);overflow:hidden;background:var(--card)}
+.tab{flex:1;padding:12px 10px;text-align:center;font-family:var(--mono);font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;text-decoration:none;color:#5A6772;border-right:1px solid var(--line)}
+.tab:last-child{border-right:none}
+.tab.active{background:var(--ink);color:#fff}
+.tab:hover:not(.active){background:#F5F0E8}
+.pass-badge{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:600;padding:2px 8px;border:1.5px solid;border-radius:2px}
+.pass-badge.pass{color:var(--pass);border-color:var(--pass)}
+.pass-badge.fail{color:var(--walk);border-color:var(--walk)}
+</style>
+</head>
+<body>
+<header>
+  <h1>BRRR<span>/</span>Scout</h1>
+  <div class="sub">calculators</div>
+  <nav>
+    <a class="btn" href="{{ url_for('index') }}">← Deal ledger</a>
+    <a class="btn" href="{{ url_for('lookup') }}">Postcode lookup</a>
+    <a class="btn" href="{{ url_for('auctions') }}">Auction tracker</a>
+    <a class="btn" href="{{ url_for('portfolio') }}">Portfolio</a>
+    <a class="btn" href="{{ url_for('settings') }}">Settings</a>
+  </nav>
+</header>
+<main>
+
+  <div class="tab-row">
+    <a class="tab {{ 'active' if active == 'sdlt' }}" href="{{ url_for('calculators') }}?calc=sdlt">SDLT / Stamp Duty</a>
+    <a class="tab {{ 'active' if active == 'flip' }}" href="{{ url_for('calculators') }}?calc=flip">Flip</a>
+    <a class="tab {{ 'active' if active == 'hmo' }}" href="{{ url_for('calculators') }}?calc=hmo">HMO</a>
+  </div>
+
+  <!-- ======= SDLT ======================================================== -->
+  {% if not active or active == 'sdlt' %}
+  <div class="card">
+    <h2>SDLT Calculator</h2>
+    <p class="sub">Additional-dwelling rates (Ltd company / second property, England). Based on current HMRC bands.</p>
+    <form method="get" action="{{ url_for('calculators') }}">
+      <input type="hidden" name="calc" value="sdlt">
+      <div class="row">
+        <div>
+          <label>Purchase price (£)</label>
+          <input name="price" type="number" placeholder="e.g. 85000" value="{{ args.get('price','') }}">
+        </div>
+      </div>
+      <button class="btn" type="submit">Calculate SDLT</button>
+    </form>
+    {% if sdlt %}
+    <div class="results">
+      <div class="bignum green">£{{ '{:,}'.format(sdlt.total) }}
+        <span style="font-size:14px;color:#5A6772;font-weight:400"> total SDLT ({{ sdlt.effective_pct }}% effective rate)</span>
+      </div>
+      <table class="sdlt-table">
+        <thead><tr><td style="color:#5A6772;font-size:10px;text-transform:uppercase;letter-spacing:.06em">Band</td><td style="text-align:right;color:#5A6772;font-size:10px;text-transform:uppercase;letter-spacing:.06em">Tax</td></tr></thead>
+        <tbody>
+        {% for band, tax in sdlt.brackets %}
+        <tr><td>{{ band }}</td><td>£{{ '{:,}'.format(tax) }}</td></tr>
+        {% endfor %}
+        <tr class="sdlt-total"><td>Total on £{{ '{:,}'.format(sdlt.price) }}</td><td>£{{ '{:,}'.format(sdlt.total) }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- ======= FLIP ======================================================== -->
+  {% if active == 'flip' %}
+  <div class="card">
+    <h2>Flip Calculator</h2>
+    <p class="sub">Buy → refurb → sell. Finds the break-even and target sale price after all costs.</p>
+    <form method="get" action="{{ url_for('calculators') }}">
+      <input type="hidden" name="calc" value="flip">
+      <div class="row">
+        <div><label>Buy price (£)</label><input name="buy_price" type="number" placeholder="e.g. 65000" value="{{ args.get('buy_price','') }}"></div>
+        <div><label>Refurb cost (£)</label><input name="refurb" type="number" placeholder="e.g. 20000" value="{{ args.get('refurb','20000') }}"></div>
+      </div>
+      <div class="row-3">
+        <div><label>Target profit (£)</label><input name="target_profit" type="number" placeholder="e.g. 15000" value="{{ args.get('target_profit','15000') }}"></div>
+        <div><label>Agent fee (%)</label><input name="agent_pct" type="number" step="0.1" placeholder="1.5" value="{{ args.get('agent_pct','1.5') }}"></div>
+      </div>
+      <button class="btn" type="submit">Calculate</button>
+    </form>
+    {% if flip %}
+    <div class="results flip">
+      <div style="display:flex;gap:40px;flex-wrap:wrap;margin-bottom:16px">
+        <div class="metric"><span class="lbl">Total money in</span><span class="bignum">£{{ '{:,}'.format(flip.total_buy_costs) }}</span></div>
+        <div class="metric"><span class="lbl">Break-even sale price</span><span class="bignum amber">£{{ '{:,}'.format(flip.breakeven_sale) }}</span></div>
+        <div class="metric"><span class="lbl">Target sale (£{{ '{:,}'.format(flip.target_profit) }} profit)</span><span class="bignum green">£{{ '{:,}'.format(flip.target_sale) }}</span></div>
+        <div class="metric"><span class="lbl">ROI on cash in</span><span class="bignum indigo">{{ flip.roi_pct }}%</span></div>
+      </div>
+      <table class="sdlt-table">
+        <tr><td>Buy price</td><td>£{{ '{:,}'.format(flip.buy_price) }}</td></tr>
+        <tr><td>Refurb</td><td>£{{ '{:,}'.format(flip.refurb) }}</td></tr>
+        <tr><td>SDLT</td><td>£{{ '{:,}'.format(flip.sdlt) }}</td></tr>
+        <tr><td>Legal (buy)</td><td>£{{ '{:,}'.format(flip.legal_buy) }}</td></tr>
+        <tr class="sdlt-total"><td>Total in</td><td>£{{ '{:,}'.format(flip.total_buy_costs) }}</td></tr>
+        <tr><td>Selling costs at target (agent + legal)</td><td>£{{ '{:,}'.format(flip.selling_costs) }}</td></tr>
+        <tr class="sdlt-total"><td>Target profit</td><td>£{{ '{:,}'.format(flip.actual_profit) }}</td></tr>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- ======= HMO ========================================================= -->
+  {% if active == 'hmo' %}
+  <div class="card">
+    <h2>HMO Calculator</h2>
+    <p class="sub">House in Multiple Occupation. Gross/net yield, cashflow, and BRRR refi potential.</p>
+    <form method="get" action="{{ url_for('calculators') }}">
+      <input type="hidden" name="calc" value="hmo">
+      <div class="row">
+        <div><label>Buy price (£)</label><input name="buy_price" type="number" placeholder="e.g. 120000" value="{{ args.get('buy_price','') }}"></div>
+        <div><label>Refurb / conversion cost (£)</label><input name="refurb" type="number" placeholder="e.g. 30000" value="{{ args.get('refurb','30000') }}"></div>
+      </div>
+      <div class="row-3">
+        <div><label>No. of rooms</label><input name="rooms" type="number" placeholder="4" value="{{ args.get('rooms','4') }}"></div>
+        <div><label>Rent per room (£/pcm)</label><input name="rent_per_room" type="number" placeholder="e.g. 450" value="{{ args.get('rent_per_room','') }}"></div>
+        <div><label>Bills per room (£/pcm)</label><input name="bills_per_room" type="number" placeholder="0 if bills not included" value="{{ args.get('bills_per_room','0') }}"></div>
+      </div>
+      <div class="row">
+        <div><label>Mortgage rate (%)</label><input name="rate" type="number" step="0.01" placeholder="5.25" value="{{ args.get('rate','5.25') }}"></div>
+        <div><label>LTV (%)</label><input name="ltv" type="number" step="1" placeholder="75" value="{{ args.get('ltv','75') }}"></div>
+      </div>
+      <button class="btn" type="submit">Calculate</button>
+    </form>
+    {% if hmo %}
+    <div class="results hmo">
+      <div style="display:flex;gap:32px;flex-wrap:wrap;margin-bottom:16px">
+        <div class="metric"><span class="lbl">Gross yield</span><span class="bignum green">{{ hmo.gross_yield_pct }}%</span></div>
+        <div class="metric"><span class="lbl">Net yield</span><span class="bignum amber">{{ hmo.net_yield_pct }}%</span></div>
+        <div class="metric"><span class="lbl">Monthly cashflow</span><span class="bignum {{ 'green' if hmo.cashflow_pm > 0 else 'red' }}">£{{ '{:,}'.format(hmo.cashflow_pm) }}</span></div>
+        <div class="metric"><span class="lbl">ROI on cash in</span><span class="bignum indigo">{{ hmo.roi_pct }}%</span></div>
+        <div class="metric"><span class="lbl">Stress test</span><span class="pass-badge {{ 'pass' if hmo.stress_pass else 'fail' }}">{{ 'PASS' if hmo.stress_pass else 'FAIL' }}</span></div>
+      </div>
+      <table class="sdlt-table">
+        <tr><td>{{ hmo.rooms }} rooms × £{{ '{:,}'.format(hmo.rent_per_room) }}/pcm</td><td>£{{ '{:,}'.format(hmo.gross_rent_pm) }}/mo gross</td></tr>
+        <tr><td>Annual gross rent</td><td>£{{ '{:,}'.format(hmo.gross_rent_yr) }}</td></tr>
+        <tr><td>Net rent (after mgmt/maint/voids/insurance)</td><td>£{{ '{:,}'.format(hmo.net_rent_yr) }}/yr</td></tr>
+        <tr><td>Mortgage (75% LTV, interest-only)</td><td>£{{ '{:,}'.format(hmo.mortgage_yr) }}/yr</td></tr>
+        <tr class="sdlt-total"><td>Annual cashflow</td><td>£{{ '{:,}'.format(hmo.cashflow_yr) }}</td></tr>
+        <tr><td>SDLT</td><td>£{{ '{:,}'.format(hmo.sdlt) }}</td></tr>
+        <tr class="sdlt-total"><td>Total cash in (deposit + refurb + SDLT + fees)</td><td>£{{ '{:,}'.format(hmo.total_cash_in) }}</td></tr>
+        <tr><td>Refi loan (75% of buy + refurb)</td><td>£{{ '{:,}'.format(hmo.refi_loan) }}</td></tr>
+        <tr><td>Extra cash released at refi</td><td>£{{ '{:,}'.format(hmo.pulled_out) }}</td></tr>
+        <tr class="sdlt-total"><td>Left in after refi</td><td>£{{ '{:,}'.format(hmo.left_in) }}</td></tr>
+      </table>
+      <p style="font-family:var(--mono);font-size:11px;color:#5A6772;margin-top:10px">
+        Costs: 12% management, 8% maintenance, 5% voids, £700 insurance. HMO mortgages are specialist products — confirm rates with a broker.
+      </p>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</main>
+</body>
+</html>

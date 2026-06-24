@@ -6,8 +6,8 @@
 <title>BRRR Scout — settings</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,700;125,800&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#18242E;--mortar:#E9ECEE;--card:#fff;--brick:#A8402C;--pass:#1F7A4D;--thin:#C77F1F;--walk:#8A1F1F;
---line:#C8CED3;--mono:'IBM Plex Mono',monospace;--disp:'Archivo',sans-serif;--body:'Inter',system-ui,sans-serif}
+:root{--ink:#0B1F3A;--mortar:#FAF6EC;--card:#fff;--brick:#A8402C;--pass:#0E6B4E;--thin:#C39A3C;--walk:#A7343A;
+--line:#DDD8CC;--navy:#0B1F3A;--indigo:#3B2FB3;--mono:'IBM Plex Mono',monospace;--disp:'Archivo',sans-serif;--body:'Inter',system-ui,sans-serif}
 *{box-sizing:border-box} body{margin:0;background:var(--mortar);color:var(--ink);font-family:var(--body);font-size:15px}
 header{background:var(--ink);color:#fff;padding:18px 28px;display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
 header h1{font-family:var(--disp);font-stretch:125%;font-weight:800;font-size:22px;letter-spacing:.04em;margin:0;text-transform:uppercase}
@@ -44,6 +44,7 @@ details.card .inner{padding-top:12px}
     <a class="btn" href="{{ url_for('lookup') }}">Postcode lookup</a>
     <a class="btn" href="{{ url_for('auctions') }}">Auction tracker</a>
     <a class="btn" href="{{ url_for('portfolio') }}">Portfolio</a>
+    <a class="btn" href="{{ url_for('calculators') }}">Calculators</a>
   </nav>
 </header>
 {% with msgs = get_flashed_messages() %}{% for m in msgs %}<div class="flash">{{ m }}</div>{% endfor %}{% endwith %}
